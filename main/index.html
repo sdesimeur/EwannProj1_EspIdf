@@ -1,0 +1,136 @@
+<html>
+<script type="text/javascript">
+function sendData(action, dataJSON) {
+  var XHR = new XMLHttpRequest();
+  var dataTxt = JSON.stringify(dataJSON);
+  XHR.addEventListener('load', function(event) {
+      if (event.target.responseURL.endsWith("rpc/getSpeed")) {
+            var tmp = parseFloat(event.target.response);
+            var tmp1 = 3.6*tmp;
+          document.getElementById('speed').innerHTML = tmp + "m/s<br>" + tmp1 + "km/h";
+      } else if (event.target.responseURL.endsWith("rpc/initAccelSpeed")) {
+          console.log(JSON.stringify(event.target.response));
+      } else if ((new RegExp("/rpc/getMagnetField\?")).test(event.target.responseURL)) {
+            var tmp = parseFloat(event.target.response);
+          var el = "magnet";
+          if (event.target.responseURL.endsWith("n")) {
+              el = 'magnet';
+          } else if (event.target.responseURL.endsWith("m")) {
+              el = 'magnetMin';
+          } else if (event.target.responseURL.endsWith("M")) {
+              el = 'magnetMax';
+          } else if (event.target.responseURL.endsWith("2")) {
+              el = 'magnetMean';
+          }
+          document.getElementById(el).innerHTML = tmp + "T";
+      } else if (event.target.responseURL.endsWith("rpc/getAccel")) {
+            var tmp = parseFloat(event.target.response);
+            var tmp1 = tmp * 9.80655;
+          document.getElementById('accel').innerHTML = tmp+"g<br>"+tmp1+"m/s^2";
+      } else if (event.target.responseURL.endsWith("rpc/getRawAccel")) {
+      } else if ((new RegExp("/rpc/getRawAccl\?")).test(event.target.responseURL)) {
+            var tmp = (event.target.response);
+          var el = "accelRaw";
+          if (event.target.responseURL.endsWith("n")) {
+              el = "accelRaw";
+          } else if (event.target.responseURL.endsWith("i")) {
+              el = "accelRawI";
+          }
+          document.getElementById(el).innerHTML = tmp;
+      }
+/*
+      if (event.target.responseURL.endsWith("rpc/FS.Get")) {
+          if (event.target.response.includes('"data":')) {
+            var tmp = atob(JSON.parse(event.target.response).data);
+            if (tmp.startsWith("{")) {
+                document.getElementById('filetxt').value = JSON.stringify(JSON.parse(tmp), undefined, 4);
+            } else {
+                document.getElementById('filetxt').value = tmp;
+            }
+          } else {
+              alert (event.target.response);
+          }
+      }
+*/
+  });
+
+  // Définissez ce qui arrive en cas d'erreur
+  XHR.addEventListener('error', function(event) {
+    alert("Oups! Quelque chose s'est mal passé.");
+  });
+
+  // Configurez la requête
+  XHR.open('GET', action);
+
+  // Ajoutez l'en-tête HTTP requise pour requêtes POST de données de formulaire
+  XHR.setRequestHeader('Content-Type', 'plain/text');
+
+  // Finalement, envoyez les données.
+  XHR.send(dataTxt);
+}
+function config_magneto_on_off () {
+    var checkon = document.getElementById("switch_config").checked;
+    var dataJSON = {};
+    sendData("rpc/configMagneto?config=" + (checkon?"1":"0"), dataJSON);
+}
+function init_accel_speed () {
+    var dataJSON = {};
+    sendData("rpc/initAccelSpeed",dataJSON);
+}
+
+function read_all () {
+    var dataJSON = {};
+    sendData("rpc/getSpeed",dataJSON);
+    sendData("rpc/getMagnetField?w=m",dataJSON);
+    sendData("rpc/getMagnetField?w=M",dataJSON);
+    sendData("rpc/getMagnetField?w=2",dataJSON);
+    sendData("rpc/getMagnetField?w=n",dataJSON);
+    sendData("rpc/getAccel",dataJSON);
+    sendData("rpc/getRawAccel?w=n",dataJSON);
+    sendData("rpc/getRawAccel?w=i",dataJSON);
+}
+
+document.onreadystatechange = function () {
+  var state = document.readyState;
+  if (state == 'interactive') {
+  } else if (state == 'complete') {
+   setInterval(read_all, 500);
+  }
+};
+
+</script>
+<body>
+  <h1>Welcome to Mongoose OS</h1>
+    <fieldset>
+      <legend>Config magneto</legend>
+        <input type="checkbox" id="switch_config" name="switch_config" onchange="config_magneto_on_off()">
+    </fieldset>
+    <fieldset>
+      <legend>Init accel speed</legend>
+      <input type="button" id="button_init_accel_speed" name="button_init_accel_speed" onclick="init_accel_speed()" value="INIT">
+    </fieldset>
+    <fieldset>
+      <legend>Speed</legend>
+      <div id="speed" name="speed">
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Magnet</legend>
+      <div id="magnet" name="magnet">
+      <div id="magnetMean" name="magnetMean">
+      <div id="magnetMax" name="magnetMax">
+      <div id="magnetMin" name="magnetMin">
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Accel</legend>
+      <div id="accel" name="accel">
+      </div>
+      <div id="accelRaw" name="accelRaw">
+      </div>
+      <div id="accelRawI" name="accelRawI">
+      </div>
+    </fieldset>
+
+</body>
+</html>
