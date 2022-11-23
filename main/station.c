@@ -17,6 +17,7 @@
 #include "esp_wifi.h"
 #include "nvs.h"
 #include "nvs_flash.h"
+#include "wifi.h"
 
 #include "lwip/err.h"
 #include "lwip/sys.h"

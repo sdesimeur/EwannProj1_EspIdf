@@ -469,14 +469,19 @@ static void i2c_task_example(void *arg)
     i2c_driver_delete(I2C_EXAMPLE_MASTER_NUM);
 }
 
+static void gpio_isr_handler(void *arg)
+{
+    static int level = 0;
+    uint32_t gpio_num = (uint32_t) arg;
+    int level_read = gpio_get_level(gpio_num);
+}
+
+
 wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
 
 void app_main(void)
 {
     esp_err_t err;
-    adc_config_t adc_cfg;
-    adc_cfg.mode = ADC_READ_TOUT_MODE;
-    adc_cfg.clk_div = 32;
 
     ESP_ERROR_CHECK(nvs_flash_init());
 
@@ -492,10 +497,28 @@ void app_main(void)
 
     i2c_example_master_mpu6050_init(I2C_EXAMPLE_MASTER_NUM);
     
+    adc_config_t adc_cfg;
+    adc_cfg.mode = ADC_READ_TOUT_MODE;
+    adc_cfg.clk_div = 32;
     err = adc_init(&adc_cfg);
     if (err != ESP_OK) {
             ESP_LOGI(TAG, "ADC init KO");
     }
+    
+    gpio_config_t io_conf;
+    //interrupt of rising edge
+    io_conf.intr_type = GPIO_INTR_POSEDGE;
+    //bit mask of the pins, use GPIO4/5 here
+    io_conf.pin_bit_mask = (1ULL<<GPIO_Pin_15);
+    //set as input mode
+    io_conf.mode = GPIO_MODE_INPUT;
+    //enable pull-up mode
+    io_conf.pull_up_en = 1;
+    gpio_config(&io_conf);
+    //change gpio intrrupt type for one pin
+    //gpio_set_intr_type(GPIO_Pin_15, GPIO_INTR_ANYEDGE);
+    gpio_install_isr_service(0);
+    gpio_isr_handler_add(GPIO_Pin_15, gpio_isr_handler, (void *) GPIO_Pin_15);
 
     hw_timer_init(hw_timer_callback, NULL);
     hw_timer_alarm_us(HW_TIMER_IN_US, true);
