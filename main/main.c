@@ -469,11 +469,14 @@ static void i2c_task_example(void *arg)
     i2c_driver_delete(I2C_EXAMPLE_MASTER_NUM);
 }
 
+int GPIO15_level = 0;
+unsigned int counter = 0;
 static void gpio_isr_handler(void *arg)
 {
-    static int level = 0;
+    int last_level = GPIO15_level;
     uint32_t gpio_num = (uint32_t) arg;
-    int level_read = gpio_get_level(gpio_num);
+    GPIO15_level = gpio_get_level(gpio_num);
+    if (GPIO15_level != last_level) counter++;
 }
 
 
@@ -507,7 +510,7 @@ void app_main(void)
     
     gpio_config_t io_conf;
     //interrupt of rising edge
-    io_conf.intr_type = GPIO_INTR_POSEDGE;
+    io_conf.intr_type = GPIO_INTR_ANYEDGE;
     //bit mask of the pins, use GPIO4/5 here
     io_conf.pin_bit_mask = (1ULL<<GPIO_Pin_15);
     //set as input mode

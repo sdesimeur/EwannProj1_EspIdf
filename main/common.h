@@ -16,6 +16,8 @@ extern XYZT accelN;
 extern XYZT accelP;
 extern XYZT speed;
 extern double Temp;
+extern unsigned int counter;
+extern double time_in_s;
 
 
 double get_speed_abs ();
