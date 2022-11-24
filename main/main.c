@@ -90,8 +90,8 @@ double time_in_s = 0;
  */
 
 
-#define I2C_EXAMPLE_MASTER_SCL_IO           GPIO_Pin_14               /*!< gpio number for I2C master clock */
-#define I2C_EXAMPLE_MASTER_SDA_IO           GPIO_Pin_12               /*!< gpio number for I2C master data  */
+#define I2C_EXAMPLE_MASTER_SCL_IO           GPIO_NUM_14               /*!< gpio number for I2C master clock */
+#define I2C_EXAMPLE_MASTER_SDA_IO           GPIO_NUM_12               /*!< gpio number for I2C master data  */
 #define I2C_EXAMPLE_MASTER_NUM              I2C_NUM_0        /*!< I2C port number for master dev */
 #define I2C_EXAMPLE_MASTER_TX_BUF_DISABLE   0                /*!< I2C master do not need buffer */
 #define I2C_EXAMPLE_MASTER_RX_BUF_DISABLE   0                /*!< I2C master do not need buffer */
@@ -512,7 +512,7 @@ void app_main(void)
     //interrupt of rising edge
     io_conf.intr_type = GPIO_INTR_ANYEDGE;
     //bit mask of the pins, use GPIO4/5 here
-    io_conf.pin_bit_mask = (1ULL<<GPIO_Pin_15);
+    io_conf.pin_bit_mask = 1ULL << GPIO_NUM_15;
     //set as input mode
     io_conf.mode = GPIO_MODE_INPUT;
     //enable pull-up mode
@@ -521,7 +521,7 @@ void app_main(void)
     //change gpio intrrupt type for one pin
     //gpio_set_intr_type(GPIO_Pin_15, GPIO_INTR_ANYEDGE);
     gpio_install_isr_service(0);
-    gpio_isr_handler_add(GPIO_Pin_15, gpio_isr_handler, (void *) GPIO_Pin_15);
+    gpio_isr_handler_add(GPIO_NUM_15, gpio_isr_handler, (void *) GPIO_NUM_15);
 
     hw_timer_init(hw_timer_callback, NULL);
     hw_timer_alarm_us(HW_TIMER_IN_US, true);

@@ -27,6 +27,14 @@ function sendData(action, dataJSON) {
             var tmp = parseFloat(event.target.response);
             var tmp1 = tmp * 9.80655;
           document.getElementById('accel').innerHTML = tmp+"g<br>"+tmp1+"m/s^2";
+      } else if (event.target.responseURL.endsWith("rpc/getCounter")) {
+          var tmp = JSON.parse(event.target.response);
+          var count = parseFloat(tmp.count);
+          var duration = parseFloat(tmp.duration);
+          var el = "counter";
+          var tmp1 = "duration:" + duration + "s<br>count:" + count 
+          document.getElementById(el).innerHTML = tmp1;
+
       } else if (event.target.responseURL.endsWith("rpc/getRawAccel")) {
       } else if ((new RegExp("/rpc/getRawAccl\?")).test(event.target.responseURL)) {
             var tmp = (event.target.response);
@@ -86,6 +94,7 @@ function read_all () {
     sendData("rpc/getMagnetField?w=2",dataJSON);
     sendData("rpc/getMagnetField?w=n",dataJSON);
     sendData("rpc/getAccel",dataJSON);
+    sendData("rpc/getCounter",dataJSON);
     sendData("rpc/getRawAccel?w=n",dataJSON);
     sendData("rpc/getRawAccel?w=i",dataJSON);
 }
@@ -102,24 +111,24 @@ document.onreadystatechange = function () {
 <body>
   <h1>Welcome to Mongoose OS</h1>
     <fieldset>
+      <legend>Magneto</legend>
+    <fieldset>
       <legend>Config magneto</legend>
         <input type="checkbox" id="switch_config" name="switch_config" onchange="config_magneto_on_off()">
     </fieldset>
-    <fieldset>
-      <legend>Init accel speed</legend>
-      <input type="button" id="button_init_accel_speed" name="button_init_accel_speed" onclick="init_accel_speed()" value="INIT">
-    </fieldset>
-    <fieldset>
-      <legend>Speed</legend>
-      <div id="speed" name="speed">
-      </div>
-    </fieldset>
-    <fieldset>
-      <legend>Magnet</legend>
       <div id="magnet" name="magnet">
       <div id="magnetMean" name="magnetMean">
       <div id="magnetMax" name="magnetMax">
       <div id="magnetMin" name="magnetMin">
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Speed</legend>
+    <fieldset>
+      <legend>Init accel speed</legend>
+      <input type="button" id="button_init_accel_speed" name="button_init_accel_speed" onclick="init_accel_speed()" value="INIT">
+    </fieldset>
+      <div id="speed" name="speed">
       </div>
     </fieldset>
     <fieldset>
@@ -129,6 +138,11 @@ document.onreadystatechange = function () {
       <div id="accelRaw" name="accelRaw">
       </div>
       <div id="accelRawI" name="accelRawI">
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Count</legend>
+      <div id="counter" name="counter">
       </div>
     </fieldset>
 

@@ -27,6 +27,14 @@
 	"            var tmp = parseFloat(event.target.response);\n" \
 	"            var tmp1 = tmp * 9.80655;\n" \
 	"          document.getElementById('accel').innerHTML = tmp+\"g<br>\"+tmp1+\"m/s^2\";\n" \
+	"      } else if (event.target.responseURL.endsWith(\"rpc/getCounter\")) {\n" \
+	"          var tmp = JSON.parse(event.target.response);\n" \
+	"          var count = parseFloat(tmp.count);\n" \
+	"          var duration = parseFloat(tmp.duration);\n" \
+	"          var el = \"counter\";\n" \
+	"          var tmp1 = \"duration:\" + duration + \"s<br>count:\" + count \n" \
+	"          document.getElementById(el).innerHTML = tmp1;\n" \
+	"\n" \
 	"      } else if (event.target.responseURL.endsWith(\"rpc/getRawAccel\")) {\n" \
 	"      } else if ((new RegExp(\"/rpc/getRawAccl\\?\")).test(event.target.responseURL)) {\n" \
 	"            var tmp = (event.target.response);\n" \
@@ -86,6 +94,7 @@
 	"    sendData(\"rpc/getMagnetField?w=2\",dataJSON);\n" \
 	"    sendData(\"rpc/getMagnetField?w=n\",dataJSON);\n" \
 	"    sendData(\"rpc/getAccel\",dataJSON);\n" \
+	"    sendData(\"rpc/getCounter\",dataJSON);\n" \
 	"    sendData(\"rpc/getRawAccel?w=n\",dataJSON);\n" \
 	"    sendData(\"rpc/getRawAccel?w=i\",dataJSON);\n" \
 	"}\n" \
@@ -102,24 +111,24 @@
 	"<body>\n" \
 	"  <h1>Welcome to Mongoose OS</h1>\n" \
 	"    <fieldset>\n" \
+	"      <legend>Magneto</legend>\n" \
+	"    <fieldset>\n" \
 	"      <legend>Config magneto</legend>\n" \
 	"        <input type=\"checkbox\" id=\"switch_config\" name=\"switch_config\" onchange=\"config_magneto_on_off()\">\n" \
 	"    </fieldset>\n" \
-	"    <fieldset>\n" \
-	"      <legend>Init accel speed</legend>\n" \
-	"      <input type=\"button\" id=\"button_init_accel_speed\" name=\"button_init_accel_speed\" onclick=\"init_accel_speed()\" value=\"INIT\">\n" \
-	"    </fieldset>\n" \
-	"    <fieldset>\n" \
-	"      <legend>Speed</legend>\n" \
-	"      <div id=\"speed\" name=\"speed\">\n" \
-	"      </div>\n" \
-	"    </fieldset>\n" \
-	"    <fieldset>\n" \
-	"      <legend>Magnet</legend>\n" \
 	"      <div id=\"magnet\" name=\"magnet\">\n" \
 	"      <div id=\"magnetMean\" name=\"magnetMean\">\n" \
 	"      <div id=\"magnetMax\" name=\"magnetMax\">\n" \
 	"      <div id=\"magnetMin\" name=\"magnetMin\">\n" \
+	"      </div>\n" \
+	"    </fieldset>\n" \
+	"    <fieldset>\n" \
+	"      <legend>Speed</legend>\n" \
+	"    <fieldset>\n" \
+	"      <legend>Init accel speed</legend>\n" \
+	"      <input type=\"button\" id=\"button_init_accel_speed\" name=\"button_init_accel_speed\" onclick=\"init_accel_speed()\" value=\"INIT\">\n" \
+	"    </fieldset>\n" \
+	"      <div id=\"speed\" name=\"speed\">\n" \
 	"      </div>\n" \
 	"    </fieldset>\n" \
 	"    <fieldset>\n" \
@@ -129,6 +138,11 @@
 	"      <div id=\"accelRaw\" name=\"accelRaw\">\n" \
 	"      </div>\n" \
 	"      <div id=\"accelRawI\" name=\"accelRawI\">\n" \
+	"      </div>\n" \
+	"    </fieldset>\n" \
+	"    <fieldset>\n" \
+	"      <legend>Count</legend>\n" \
+	"      <div id=\"counter\" name=\"counter\">\n" \
 	"      </div>\n" \
 	"    </fieldset>\n" \
 	"\n" \
