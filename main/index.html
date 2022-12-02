@@ -31,8 +31,25 @@ function sendData(action, dataJSON) {
           var tmp = JSON.parse(event.target.response);
           var count = parseFloat(tmp.count);
           var duration = parseFloat(tmp.duration);
+          var freq = parseFloat(tmp.freq);
           var el = "counter";
-          var tmp1 = "duration:" + duration + "s<br>count:" + count 
+          var tmp1 = "duration:" + duration + "s<br>count:" + count + "<br>frequence: " + freq + "/s<br> speed:";
+          var s = (freq * parseFloat(document.getElementById("counter_val_per_pulse").value));
+          var u = document.getElementById("counter_time_unit").value;
+          switch (u) {
+              case "m":
+                  s *= 60;
+                  break;
+              case "h":
+                  s *= 3600;
+                  break;
+              default:
+              case "s":
+                  break;
+          }
+          tmp1 += s;
+          tmp1 += document.getElementById("counter_val_unit").value;
+          tmp1 += "/" + u;
           document.getElementById(el).innerHTML = tmp1;
 
       } else if (event.target.responseURL.endsWith("rpc/getRawAccel")) {
@@ -124,10 +141,10 @@ document.onreadystatechange = function () {
     </fieldset>
     <fieldset>
       <legend>Speed</legend>
-    <fieldset>
-      <legend>Init accel speed</legend>
-      <input type="button" id="button_init_accel_speed" name="button_init_accel_speed" onclick="init_accel_speed()" value="INIT">
-    </fieldset>
+        <fieldset>
+            <legend>Init accel speed</legend>
+            <input type="button" id="button_init_accel_speed" name="button_init_accel_speed" onclick="init_accel_speed()" value="INIT">
+        </fieldset>
       <div id="speed" name="speed">
       </div>
     </fieldset>
@@ -142,6 +159,19 @@ document.onreadystatechange = function () {
     </fieldset>
     <fieldset>
       <legend>Count</legend>
+        <fieldset>
+            <legend>Parametrage vitesse par roue codeuse</legend>
+            Longueur ou angle (ou autre) mesuree entre chaque pulsation: <input type="text" id="counter_val_per_pulse" name="counter_val_per_pulse" value="1">
+            <br>
+            Unite de la valeur mesuree: <input type="text" id="counter_val_unit" name="counter_val_unit" value="">
+            <br>
+            Unite de temps souhaitee:
+            <select id="counter_time_unit" name="counter_time_unit">
+                <option value="s" selected>seconde</option>
+                <option value="m">minute</option>
+                <option value="h">heure</option>
+            </select>
+        </fieldset>
       <div id="counter" name="counter">
       </div>
     </fieldset>

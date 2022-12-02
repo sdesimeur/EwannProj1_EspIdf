@@ -54,6 +54,8 @@ double magnetoFieldMax = -1000000;
 double magnetoFieldMin = 1000000;
 int magnetoFieldInit = 0;
 
+int accelero_started = 0;
+
 XYZT gyro = {0, 0, 0, 0};
 XYZT accelI = {0, 0, 0, 0};
 XYZT accelN = {0, 0, 0, 0};
@@ -269,10 +271,38 @@ static esp_err_t i2c_example_master_mpu6050_init(i2c_port_t i2c_num)
 static void hw_timer_callback(void* t)
 {
     time_in_s += (double)HW_TIMER_IN_US / 1000000;
+    int ret;
+        
+    uint16_t val;
+        ret = adc_read (&val);
+        if (ret == ESP_OK) {
+            double valD = (double)val;
+            valD *= 3;
+            valD *= 3.3;
+            valD /= 2048;
+            valD /= 18;
+            if (magnetoFieldInit == 0) {
+                magnetoFieldMin = 1000000;
+                magnetoFieldMax = -1000000;
+            } else {
+                if (magnetoFieldMax < valD) magnetoFieldMax = valD;
+                if (magnetoFieldMin > valD) magnetoFieldMin = valD;
+                magnetoFieldMean = (magnetoFieldMax + magnetoFieldMin) / 2;
+            }
+            valD -= magnetoFieldMean;
+            if (magnetoField == 1000000) {
+                magnetoField = valD;
+            } else {
+                magnetoField *= 3;
+                magnetoField += valD;
+                magnetoField /= 4;
+            }
+        }
+    
+        if (accelero_started == 0) return;
     uint8_t sensor_data[14];
     //uint8_t who_am_i, i;
     //static uint32_t error_count = 0;
-    int ret;
 
     
     /*
@@ -371,31 +401,6 @@ static void hw_timer_callback(void* t)
             }
         }
 
-        uint16_t val;
-        ret = adc_read (&val);
-        if (ret == ESP_OK) {
-            double valD = (double)val;
-            valD *= 3;
-            valD *= 3.3;
-            valD /= 2048;
-            valD /= 18;
-            if (magnetoFieldInit == 0) {
-                magnetoFieldMin = 1000000;
-                magnetoFieldMax = -1000000;
-            } else {
-                if (magnetoFieldMax < valD) magnetoFieldMax = valD;
-                if (magnetoFieldMin > valD) magnetoFieldMin = valD;
-                magnetoFieldMean = (magnetoFieldMax + magnetoFieldMin) / 2;
-            }
-            valD -= magnetoFieldMean;
-            if (magnetoField == 1000000) {
-                magnetoField = valD;
-            } else {
-                magnetoField *= 3;
-                magnetoField += valD;
-                magnetoField /= 4;
-            }
-        }
         //vTaskDelay(100 / portTICK_RATE_MS);
     //}
 
@@ -471,12 +476,21 @@ static void i2c_task_example(void *arg)
 
 int GPIO15_level = 0;
 unsigned int counter = 0;
+unsigned int counter_last = 0;
+double counter_last_time_in_s = 0;
+double counter_last_freq = 0;
 static void gpio_isr_handler(void *arg)
 {
     int last_level = GPIO15_level;
     uint32_t gpio_num = (uint32_t) arg;
     GPIO15_level = gpio_get_level(gpio_num);
     if (GPIO15_level != last_level) counter++;
+    if (counter % 2 == 0) {
+        double new_time_in_s = time_in_s;
+        counter_last_freq = 1 / (2 * (new_time_in_s - counter_last_time_in_s) / (counter - counter_last));
+        counter_last_time_in_s = new_time_in_s;
+        counter_last = counter;
+    }
 }
 
 
@@ -498,7 +512,7 @@ void app_main(void)
     wifi_init_sta();
     wifi_init_softap();
 
-    i2c_example_master_mpu6050_init(I2C_EXAMPLE_MASTER_NUM);
+    //i2c_example_master_mpu6050_init(I2C_EXAMPLE_MASTER_NUM);
     
     adc_config_t adc_cfg;
     adc_cfg.mode = ADC_READ_TOUT_MODE;

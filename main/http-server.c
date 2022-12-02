@@ -354,8 +354,10 @@ esp_err_t rpc_getcounter_handler(httpd_req_t *req)
         free(buf);
     }
 
-    sprintf(resp_str, "{ \"count\" : %d , \"duration\" : %d.%09d }", counter,
-            (unsigned int)time_in_s, ((unsigned int)(time_in_s * 1000000000)) % 1000000000);
+    sprintf(resp_str, "{ \"count\" : %d , \"duration\" : %d.%09d , \"freq\" : %d.%09d }", counter,
+            (unsigned int)time_in_s, ((unsigned int)(time_in_s * 1000000000)) % 1000000000,
+            (unsigned int)counter_last_freq, ((unsigned int)(counter_last_freq * 1000000000)) % 1000000000
+            );
     httpd_resp_send(req, resp_str, strlen(resp_str));
 
     /* After sending the HTTP response the old HTTP request

@@ -18,7 +18,8 @@ extern XYZT speed;
 extern double Temp;
 extern unsigned int counter;
 extern double time_in_s;
-
+extern double counter_last_freq;
+extern int accelero_started;
 
 double get_speed_abs ();
 double get_magnetofield ();
@@ -27,3 +28,4 @@ double get_magnetofieldMax ();
 double get_magnetofieldMin ();
 double get_accel_abs ();
 void init_accel_speed();
+void start_accelero(int a);
