@@ -55,6 +55,7 @@ double magnetoFieldMin = 1000000;
 int magnetoFieldInit = 0;
 
 int accelero_started = 0;
+int accel_speed_has_to_be_switch = 0;
 
 XYZT gyro = {0, 0, 0, 0};
 XYZT accelI = {0, 0, 0, 0};
@@ -105,9 +106,9 @@ double time_in_s = 0;
 #define READ_BIT                            I2C_MASTER_READ  /*!< I2C master read */
 #define ACK_CHECK_EN                        0x1              /*!< I2C master will check ack from slave*/
 #define ACK_CHECK_DIS                       0x0              /*!< I2C master will not check ack from slave */
-#define ACK_VAL                             I2C_MASTER_ACK              /*!< I2C ack value */
-#define NACK_VAL                            I2C_MASTER_NACK              /*!< I2C nack value */
-#define LAST_NACK_VAL                       I2C_MASTER_LAST_NACK              /*!< I2C last_nack value */
+#define ACK_VAL                             0x0              /*!< I2C ack value */
+#define NACK_VAL                            0x1              /*!< I2C nack value */
+#define LAST_NACK_VAL                       0x2              /*!< I2C last_nack value */
 
 /**
  * Define the mpu6050 register address:
@@ -180,7 +181,7 @@ static esp_err_t i2c_example_master_mpu6050_write(i2c_port_t i2c_num, uint8_t re
     i2c_master_write_byte(cmd, reg_address, ACK_CHECK_EN);
     i2c_master_write(cmd, data, data_len, ACK_CHECK_EN);
     i2c_master_stop(cmd);
-    ret = i2c_master_cmd_begin(i2c_num, cmd, 1000 / portTICK_RATE_MS);
+    ret = i2c_master_cmd_begin(i2c_num, cmd, 2000 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
 
     return ret;
@@ -239,32 +240,43 @@ static esp_err_t i2c_example_master_mpu6050_read(i2c_port_t i2c_num, uint8_t reg
 
 static esp_err_t i2c_example_master_mpu6050_init(i2c_port_t i2c_num)
 {
-    uint8_t cmd_data;
+    uint8_t cmd_data[4];
+    unsigned int state = 0;
     ESP_ERROR_CHECK(gpio_set_direction(GPIO_NUM_5, GPIO_MODE_OUTPUT));
     ESP_ERROR_CHECK(gpio_set_level(GPIO_NUM_5, 0));
+            ESP_LOGI(TAG, "state %d\n", state);state++;
     vTaskDelay(5000 / portTICK_RATE_MS);
     ESP_ERROR_CHECK(gpio_set_level(GPIO_NUM_5, 1));
+            ESP_LOGI(TAG, "state %d\n", state);state++;
     vTaskDelay(100 / portTICK_RATE_MS);
     i2c_example_master_init();
+            ESP_LOGI(TAG, "state %d\n", state);state++;
     vTaskDelay(1000 / portTICK_RATE_MS);
 
-    cmd_data = 0x80;    // reset mpu6050
-    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, 0x6B, &cmd_data, 1));
+    cmd_data[0] = 0x80;    // reset mpu6050
+    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, 0x6B, cmd_data, 1));
+            ESP_LOGI(TAG, "state %d\n", state);state++;
     vTaskDelay(100 / portTICK_RATE_MS);
-    //cmd_data = 0x06;    // Set the Low Pass Filter
-    //ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, CONFIG, &cmd_data, 1));
-    cmd_data = 0x10;
-    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, 0x6B, &cmd_data, 1));
+    //cmd_data[0] = 0x06;    // Set the Low Pass Filter
+    //ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, CONFIG, cmd_data, 1));
+    cmd_data[0] = 0x10;
+    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, 0x6B, cmd_data, 1));
+            ESP_LOGI(TAG, "state %d\n", state);state++;
     vTaskDelay(100 / portTICK_RATE_MS);
-    cmd_data = 0x00;    // Set the GYRO range
-    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, 0x1B, &cmd_data, 1));
-    cmd_data = 0x10;    // Set the ACCEL range
-    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, 0x1C, &cmd_data, 1));
-    cmd_data = 0x00;
-    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, 0x38, &cmd_data, 1));
+    cmd_data[0] = 0x00;    // Set the GYRO range
+    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, 0x1B, cmd_data, 1));
+            ESP_LOGI(TAG, "state %d\n", state);state++;
+    cmd_data[0] = 0x10;    // Set the ACCEL range
+    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, 0x1C, cmd_data, 1));
+            ESP_LOGI(TAG, "state %d\n", state);state++;
+    cmd_data[0] = 0x00;
+    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, 0x38, cmd_data, 1));
+            ESP_LOGI(TAG, "state %d\n", state);state++;
     //cmd_data = 0x01;
     who_am_i = 0;
     i2c_example_master_mpu6050_read(I2C_EXAMPLE_MASTER_NUM, WHO_AM_I, &who_am_i, 1);
+            ESP_LOGI(TAG, "state %d\n", state);state++;
+    accelero_started = 1;
     return ESP_OK;
 }
 
@@ -469,6 +481,12 @@ static void i2c_task_example(void *arg)
                     (gyro.z<0)?'-':'+', (unsigned int)(((gyro.z<0)?-1:1)*gyro.z), (unsigned int)(gyro.z * 1000) % 1000
                     );
 #endif
+                    ESP_LOGI(TAG, "task\n");
+            if (accel_speed_has_to_be_switch == 1) {
+                    ESP_LOGI(TAG, "accel will be switch\n");
+                accel_speed_has_to_be_switch = 0;
+                i2c_example_master_mpu6050_init(I2C_EXAMPLE_MASTER_NUM);
+            }
             vTaskDelay(1000 / portTICK_RATE_MS);
     }
     i2c_driver_delete(I2C_EXAMPLE_MASTER_NUM);
@@ -506,13 +524,13 @@ void app_main(void)
 
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
+                i2c_example_master_mpu6050_init(I2C_EXAMPLE_MASTER_NUM);
     
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
     wifi_init_sta();
     wifi_init_softap();
 
-    //i2c_example_master_mpu6050_init(I2C_EXAMPLE_MASTER_NUM);
     
     adc_config_t adc_cfg;
     adc_cfg.mode = ADC_READ_TOUT_MODE;

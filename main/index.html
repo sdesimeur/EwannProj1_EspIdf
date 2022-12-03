@@ -1,32 +1,18 @@
 <html>
 <script type="text/javascript">
-function sendData(action, dataJSON) {
+function sendData(action) {
   var XHR = new XMLHttpRequest();
-  var dataTxt = JSON.stringify(dataJSON);
   XHR.addEventListener('load', function(event) {
-      if (event.target.responseURL.endsWith("rpc/getSpeed")) {
-            var tmp = parseFloat(event.target.response);
-            var tmp1 = 3.6*tmp;
-          document.getElementById('speed').innerHTML = tmp + "m/s<br>" + tmp1 + "km/h";
-      } else if (event.target.responseURL.endsWith("rpc/initAccelSpeed")) {
-          console.log(JSON.stringify(event.target.response));
-      } else if ((new RegExp("/rpc/getMagnetField\?")).test(event.target.responseURL)) {
-            var tmp = parseFloat(event.target.response);
-          var el = "magnet";
-          if (event.target.responseURL.endsWith("n")) {
-              el = 'magnet';
-          } else if (event.target.responseURL.endsWith("m")) {
+      if (event.target.responseURL.endsWith("/rpc/getMagnetField")) {
+            var tmp = JSON.parse(event.target.response);
+            var el = "magnet";
+              document.getElementById(el).innerHTML = parseFloat(tmp.magnet) + "T";
               el = 'magnetMin';
-          } else if (event.target.responseURL.endsWith("M")) {
+              document.getElementById(el).innerHTML = parseFloat(tmp.magnetMin) + "T";
               el = 'magnetMax';
-          } else if (event.target.responseURL.endsWith("2")) {
+              document.getElementById(el).innerHTML = parseFloat(tmp.magnetMax) + "T";
               el = 'magnetMean';
-          }
-          document.getElementById(el).innerHTML = tmp + "T";
-      } else if (event.target.responseURL.endsWith("rpc/getAccel")) {
-            var tmp = parseFloat(event.target.response);
-            var tmp1 = tmp * 9.80655;
-          document.getElementById('accel').innerHTML = tmp+"g<br>"+tmp1+"m/s^2";
+              document.getElementById(el).innerHTML = parseFloat(tmp.magnetMean) + "T";
       } else if (event.target.responseURL.endsWith("rpc/getCounter")) {
           var tmp = JSON.parse(event.target.response);
           var count = parseFloat(tmp.count);
@@ -51,32 +37,20 @@ function sendData(action, dataJSON) {
           tmp1 += document.getElementById("counter_val_unit").value;
           tmp1 += "/" + u;
           document.getElementById(el).innerHTML = tmp1;
-
-      } else if (event.target.responseURL.endsWith("rpc/getRawAccel")) {
-      } else if ((new RegExp("/rpc/getRawAccl\?")).test(event.target.responseURL)) {
-            var tmp = (event.target.response);
+      } else if (event.target.responseURL.endsWith("/rpc/getAccel")) {
+            var tmp = JSON.parse(event.target.response);
           var el = "accelRaw";
-          if (event.target.responseURL.endsWith("n")) {
-              el = "accelRaw";
-          } else if (event.target.responseURL.endsWith("i")) {
+          document.getElementById(el).innerHTML = parseFloat(tmp.accelN);
               el = "accelRawI";
-          }
-          document.getElementById(el).innerHTML = tmp;
+          document.getElementById(el).innerHTML = parseFloat(tmp.accelI);
+              el = "accel";
+          document.getElementById(el).innerHTML = parseFloat(tmp.accel)+"g<br>"+(parseFloat(tmp.accel)*9.80655)+"m/s^2";
+              el = "speed";
+          document.getElementById(el).innerHTML = parseFloat(tmp.speed) + "m/s<br>" + (parseFloat(tmp.speed)*3.6) + "km/h";
+
+      } else {
+          console.warn(event.target.response);
       }
-/*
-      if (event.target.responseURL.endsWith("rpc/FS.Get")) {
-          if (event.target.response.includes('"data":')) {
-            var tmp = atob(JSON.parse(event.target.response).data);
-            if (tmp.startsWith("{")) {
-                document.getElementById('filetxt').value = JSON.stringify(JSON.parse(tmp), undefined, 4);
-            } else {
-                document.getElementById('filetxt').value = tmp;
-            }
-          } else {
-              alert (event.target.response);
-          }
-      }
-*/
   });
 
   // Définissez ce qui arrive en cas d'erreur
@@ -88,32 +62,26 @@ function sendData(action, dataJSON) {
   XHR.open('GET', action);
 
   // Ajoutez l'en-tête HTTP requise pour requêtes POST de données de formulaire
-  XHR.setRequestHeader('Content-Type', 'plain/text');
+//  XHR.setRequestHeader('Content-Type', 'plain/text');
 
   // Finalement, envoyez les données.
-  XHR.send(dataTxt);
+  XHR.send();
 }
 function config_magneto_on_off () {
     var checkon = document.getElementById("switch_config").checked;
-    var dataJSON = {};
-    sendData("rpc/configMagneto?config=" + (checkon?"1":"0"), dataJSON);
+    sendData("rpc/configMagneto?config=" + (checkon?"1":"0"));
 }
 function init_accel_speed () {
-    var dataJSON = {};
-    sendData("rpc/initAccelSpeed",dataJSON);
+    sendData("rpc/initAccelSpeed");
 }
-
+function accel_on_off() {
+    var checkon = document.getElementById("accel_speed_on").checked;
+    sendData("rpc/startAccelSpeed?start=" + (checkon?"1":"0"));
+}
 function read_all () {
-    var dataJSON = {};
-    sendData("rpc/getSpeed",dataJSON);
-    sendData("rpc/getMagnetField?w=m",dataJSON);
-    sendData("rpc/getMagnetField?w=M",dataJSON);
-    sendData("rpc/getMagnetField?w=2",dataJSON);
-    sendData("rpc/getMagnetField?w=n",dataJSON);
-    sendData("rpc/getAccel",dataJSON);
-    sendData("rpc/getCounter",dataJSON);
-    sendData("rpc/getRawAccel?w=n",dataJSON);
-    sendData("rpc/getRawAccel?w=i",dataJSON);
+    sendData("rpc/getMagnetField");
+    sendData("rpc/getAccel");
+    sendData("rpc/getCounter");
 }
 
 document.onreadystatechange = function () {
@@ -134,28 +102,25 @@ document.onreadystatechange = function () {
         <input type="checkbox" id="switch_config" name="switch_config" onchange="config_magneto_on_off()">
     </fieldset>
       <div id="magnet" name="magnet">
+      </div>
       <div id="magnetMean" name="magnetMean">
+      </div>
       <div id="magnetMax" name="magnetMax">
+      </div>
       <div id="magnetMin" name="magnetMin">
       </div>
     </fieldset>
     <fieldset>
-      <legend>Speed</legend>
+      <legend>Accel and Speed</legend>
         <fieldset>
             <legend>Init accel speed</legend>
-            <input type="button" id="button_init_accel_speed" name="button_init_accel_speed" onclick="init_accel_speed()" value="INIT">
+            Start accel module: <input type="checkbox" id="accel_speed_on" name="accel_speed_on" onchange="accel_on_off()"><br>
+            <input type="button" id="button_init_accel_speed" name="button_init_accel_speed" onclick="init_accel_speed()" value="Reset">
         </fieldset>
-      <div id="speed" name="speed">
-      </div>
-    </fieldset>
-    <fieldset>
-      <legend>Accel</legend>
-      <div id="accel" name="accel">
-      </div>
-      <div id="accelRaw" name="accelRaw">
-      </div>
-      <div id="accelRawI" name="accelRawI">
-      </div>
+      Speed :<span id="speed" name="speed"></span><br>
+      Accel: <span id="accel" name="accel"></span><br>
+      Accel: <span id="accelRaw" name="accelRaw"></span><br>
+      Accel initial: <span id="accelRawI" name="accelRawI"></span>
     </fieldset>
     <fieldset>
       <legend>Count</legend>

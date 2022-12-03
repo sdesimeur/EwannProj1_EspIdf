@@ -20,6 +20,7 @@ extern unsigned int counter;
 extern double time_in_s;
 extern double counter_last_freq;
 extern int accelero_started;
+extern int accel_speed_has_to_be_switch;
 
 double get_speed_abs ();
 double get_magnetofield ();
