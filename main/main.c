@@ -181,7 +181,7 @@ static esp_err_t i2c_example_master_mpu6050_write(i2c_port_t i2c_num, uint8_t re
     i2c_master_write_byte(cmd, reg_address, ACK_CHECK_EN);
     i2c_master_write(cmd, data, data_len, ACK_CHECK_EN);
     i2c_master_stop(cmd);
-    ret = i2c_master_cmd_begin(i2c_num, cmd, 2000 / portTICK_RATE_MS);
+    ret = i2c_master_cmd_begin(i2c_num, cmd, 1000 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
 
     return ret;
@@ -242,40 +242,29 @@ static esp_err_t i2c_example_master_mpu6050_init(i2c_port_t i2c_num)
 {
     uint8_t cmd_data[4];
     unsigned int state = 0;
-    ESP_ERROR_CHECK(gpio_set_direction(GPIO_NUM_5, GPIO_MODE_OUTPUT));
-    ESP_ERROR_CHECK(gpio_set_level(GPIO_NUM_5, 0));
-            ESP_LOGI(TAG, "state %d\n", state);state++;
-    vTaskDelay(5000 / portTICK_RATE_MS);
     ESP_ERROR_CHECK(gpio_set_level(GPIO_NUM_5, 1));
-            ESP_LOGI(TAG, "state %d\n", state);state++;
-    vTaskDelay(100 / portTICK_RATE_MS);
+    vTaskDelay(500 / portTICK_RATE_MS);
     i2c_example_master_init();
-            ESP_LOGI(TAG, "state %d\n", state);state++;
-    vTaskDelay(1000 / portTICK_RATE_MS);
+    vTaskDelay(500 / portTICK_RATE_MS);
 
     cmd_data[0] = 0x80;    // reset mpu6050
-    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, 0x6B, cmd_data, 1));
-            ESP_LOGI(TAG, "state %d\n", state);state++;
+    ESP_ERROR_CHECK_WITHOUT_ABORT(i2c_example_master_mpu6050_write(i2c_num, 0x6B, cmd_data, 1));
     vTaskDelay(100 / portTICK_RATE_MS);
     //cmd_data[0] = 0x06;    // Set the Low Pass Filter
-    //ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, CONFIG, cmd_data, 1));
+    //ESP_ERROR_CHECK_WITHOUT_ABORT(i2c_example_master_mpu6050_write(i2c_num, CONFIG, cmd_data, 1));
     cmd_data[0] = 0x10;
-    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, 0x6B, cmd_data, 1));
-            ESP_LOGI(TAG, "state %d\n", state);state++;
+    ESP_ERROR_CHECK_WITHOUT_ABORT(i2c_example_master_mpu6050_write(i2c_num, 0x6B, cmd_data, 1));
     vTaskDelay(100 / portTICK_RATE_MS);
     cmd_data[0] = 0x00;    // Set the GYRO range
-    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, 0x1B, cmd_data, 1));
-            ESP_LOGI(TAG, "state %d\n", state);state++;
+    ESP_ERROR_CHECK_WITHOUT_ABORT(i2c_example_master_mpu6050_write(i2c_num, 0x1B, cmd_data, 1));
     cmd_data[0] = 0x10;    // Set the ACCEL range
-    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, 0x1C, cmd_data, 1));
-            ESP_LOGI(TAG, "state %d\n", state);state++;
+    ESP_ERROR_CHECK_WITHOUT_ABORT(i2c_example_master_mpu6050_write(i2c_num, 0x1C, cmd_data, 1));
     cmd_data[0] = 0x00;
-    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, 0x38, cmd_data, 1));
-            ESP_LOGI(TAG, "state %d\n", state);state++;
+    ESP_ERROR_CHECK_WITHOUT_ABORT(i2c_example_master_mpu6050_write(i2c_num, 0x38, cmd_data, 1));
     //cmd_data = 0x01;
     who_am_i = 0;
     i2c_example_master_mpu6050_read(I2C_EXAMPLE_MASTER_NUM, WHO_AM_I, &who_am_i, 1);
-            ESP_LOGI(TAG, "state %d\n", state);state++;
+    vTaskDelay(1000 / portTICK_RATE_MS);
     accelero_started = 1;
     return ESP_OK;
 }
@@ -481,7 +470,6 @@ static void i2c_task_example(void *arg)
                     (gyro.z<0)?'-':'+', (unsigned int)(((gyro.z<0)?-1:1)*gyro.z), (unsigned int)(gyro.z * 1000) % 1000
                     );
 #endif
-                    ESP_LOGI(TAG, "task\n");
             if (accel_speed_has_to_be_switch == 1) {
                     ESP_LOGI(TAG, "accel will be switch\n");
                 accel_speed_has_to_be_switch = 0;
@@ -519,12 +507,16 @@ void app_main(void)
     esp_err_t err;
 
     ESP_ERROR_CHECK(nvs_flash_init());
+    
+    ESP_ERROR_CHECK(gpio_set_direction(GPIO_NUM_5, GPIO_MODE_OUTPUT));
+    ESP_ERROR_CHECK(gpio_set_level(GPIO_NUM_5, 0));
+    vTaskDelay(3000 / portTICK_RATE_MS);
 
     tcpip_adapter_init();
 
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
-                i2c_example_master_mpu6050_init(I2C_EXAMPLE_MASTER_NUM);
+    //            i2c_example_master_mpu6050_init(I2C_EXAMPLE_MASTER_NUM);
     
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 

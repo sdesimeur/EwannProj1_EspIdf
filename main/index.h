@@ -37,33 +37,20 @@
 	"          tmp1 += document.getElementById(\"counter_val_unit\").value;\n" \
 	"          tmp1 += \"/\" + u;\n" \
 	"          document.getElementById(el).innerHTML = tmp1;\n" \
-	"\n" \
 	"      } else if (event.target.responseURL.endsWith(\"/rpc/getAccel\")) {\n" \
 	"            var tmp = JSON.parse(event.target.response);\n" \
 	"          var el = \"accelRaw\";\n" \
-	"          document.getElementById(el).innerHTML = parseFloat(tmp.accelN);\n" \
+	"          document.getElementById(el).innerHTML = JSON.stringify(tmp.accelN);\n" \
 	"              el = \"accelRawI\";\n" \
-	"          document.getElementById(el).innerHTML = parseFloat(tmp.accelI);\n" \
+	"          document.getElementById(el).innerHTML = JSON.stringify(tmp.accelI);\n" \
 	"              el = \"accel\";\n" \
 	"          document.getElementById(el).innerHTML = parseFloat(tmp.accel)+\"g<br>\"+(parseFloat(tmp.accel)*9.80655)+\"m/s^2\";\n" \
 	"              el = \"speed\";\n" \
 	"          document.getElementById(el).innerHTML = parseFloat(tmp.speed) + \"m/s<br>\" + (parseFloat(tmp.speed)*3.6) + \"km/h\";\n" \
 	"\n" \
+	"      } else {\n" \
+	"          console.warn(event.target.response);\n" \
 	"      }\n" \
-	"/*\n" \
-	"      if (event.target.responseURL.endsWith(\"rpc/FS.Get\")) {\n" \
-	"          if (event.target.response.includes('\"data\":')) {\n" \
-	"            var tmp = atob(JSON.parse(event.target.response).data);\n" \
-	"            if (tmp.startsWith(\"{\")) {\n" \
-	"                document.getElementById('filetxt').value = JSON.stringify(JSON.parse(tmp), undefined, 4);\n" \
-	"            } else {\n" \
-	"                document.getElementById('filetxt').value = tmp;\n" \
-	"            }\n" \
-	"          } else {\n" \
-	"              alert (event.target.response);\n" \
-	"          }\n" \
-	"      }\n" \
-	"*/\n" \
 	"  });\n" \
 	"\n" \
 	"  // Définissez ce qui arrive en cas d'erreur\n" \

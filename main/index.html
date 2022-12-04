@@ -40,9 +40,9 @@ function sendData(action) {
       } else if (event.target.responseURL.endsWith("/rpc/getAccel")) {
             var tmp = JSON.parse(event.target.response);
           var el = "accelRaw";
-          document.getElementById(el).innerHTML = parseFloat(tmp.accelN);
+          document.getElementById(el).innerHTML = JSON.stringify(tmp.accelN);
               el = "accelRawI";
-          document.getElementById(el).innerHTML = parseFloat(tmp.accelI);
+          document.getElementById(el).innerHTML = JSON.stringify(tmp.accelI);
               el = "accel";
           document.getElementById(el).innerHTML = parseFloat(tmp.accel)+"g<br>"+(parseFloat(tmp.accel)*9.80655)+"m/s^2";
               el = "speed";
