@@ -131,10 +131,10 @@ esp_err_t rpc_getmagnetfield_get_handler(httpd_req_t *req)
         }
         free(buf);
     }
-    double a = get_magnetofield();
-    double b = get_magnetofieldMean();
-    double c = get_magnetofieldMax();
-    double d = get_magnetofieldMin();
+    double a = magnetoField;
+    double b = magnetoFieldMean;
+    double c = magnetoFieldMax;
+    double d = magnetoFieldMin;
     
     sprintf(resp_str, "{ "
             "\"magnet\" : %c%d.%09d , "
@@ -189,14 +189,17 @@ esp_err_t rpc_getaccel_get_handler(httpd_req_t *req)
     }
     XYZT *a = &accelN;
     XYZT *b = &accelI;
-    double c = get_accel_abs();
-    double d = get_speed_abs();
+    double c = get_XYZT_abs(accelN);
+    double d = get_XYZT_abs(speed);
+    double e = accelMaxWG;
     sprintf(resp_str, "{ "
+            "\"accelMaxWG\" : %d.%09d , "
             "\"speed\" : %c%d.%09d , "
             "\"accel\" : %c%d.%09d , "
             "\"accelN\" : [ %c%d.%09d, %c%d.%09d, %c%d.%09d ], "
             "\"accelI\" : [ %c%d.%09d, %c%d.%09d, %c%d.%09d ] }",
             
+            (unsigned int)e, ((unsigned int)(e * 1000000000)) % 1000000000,
             (d<0)?'-':' ',
             (unsigned int)(((d<0)?-1:1) * d), ((unsigned int)(((d<0)?-1:1) * d * 1000000000)) % 1000000000,
             (c<0)?'-':' ',

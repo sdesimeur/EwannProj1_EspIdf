@@ -41,6 +41,8 @@ function sendData(action) {
             var tmp = JSON.parse(event.target.response);
           var el = "accelRaw";
           document.getElementById(el).innerHTML = JSON.stringify(tmp.accelN);
+              el = "accelMaxWG";
+          document.getElementById(el).innerHTML = parseFloat(tmp.accelMaxWG);
               el = "accelRawI";
           document.getElementById(el).innerHTML = JSON.stringify(tmp.accelI);
               el = "accel";
@@ -55,7 +57,7 @@ function sendData(action) {
 
   // Définissez ce qui arrive en cas d'erreur
   XHR.addEventListener('error', function(event) {
-    alert("Oups! Quelque chose s'est mal passé.");
+    console.warn("Oups! Quelque chose s'est mal passé.");
   });
 
   // Configurez la requête
@@ -120,6 +122,7 @@ document.onreadystatechange = function () {
       Speed :<span id="speed" name="speed"></span><br>
       Accel: <span id="accel" name="accel"></span><br>
       Accel: <span id="accelRaw" name="accelRaw"></span><br>
+      Accel max.: <span id="accelMaxWG" name="accelMaxWG"></span><br>
       Accel initial: <span id="accelRawI" name="accelRawI"></span>
     </fieldset>
     <fieldset>

@@ -41,6 +41,8 @@
 	"            var tmp = JSON.parse(event.target.response);\n" \
 	"          var el = \"accelRaw\";\n" \
 	"          document.getElementById(el).innerHTML = JSON.stringify(tmp.accelN);\n" \
+	"              el = \"accelMaxWG\";\n" \
+	"          document.getElementById(el).innerHTML = parseFloat(tmp.accelMaxWG);\n" \
 	"              el = \"accelRawI\";\n" \
 	"          document.getElementById(el).innerHTML = JSON.stringify(tmp.accelI);\n" \
 	"              el = \"accel\";\n" \
@@ -55,7 +57,7 @@
 	"\n" \
 	"  // Définissez ce qui arrive en cas d'erreur\n" \
 	"  XHR.addEventListener('error', function(event) {\n" \
-	"    alert(\"Oups! Quelque chose s'est mal passé.\");\n" \
+	"    console.warn(\"Oups! Quelque chose s'est mal passé.\");\n" \
 	"  });\n" \
 	"\n" \
 	"  // Configurez la requête\n" \
@@ -120,6 +122,7 @@
 	"      Speed :<span id=\"speed\" name=\"speed\"></span><br>\n" \
 	"      Accel: <span id=\"accel\" name=\"accel\"></span><br>\n" \
 	"      Accel: <span id=\"accelRaw\" name=\"accelRaw\"></span><br>\n" \
+	"      Accel max.: <span id=\"accelMaxWG\" name=\"accelMaxWG\"></span><br>\n" \
 	"      Accel initial: <span id=\"accelRawI\" name=\"accelRawI\"></span>\n" \
 	"    </fieldset>\n" \
 	"    <fieldset>\n" \
