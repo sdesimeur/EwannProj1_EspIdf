@@ -57,7 +57,7 @@
 	"\n" \
 	"  // Définissez ce qui arrive en cas d'erreur\n" \
 	"  XHR.addEventListener('error', function(event) {\n" \
-	"    console.warn(\"Oups! Quelque chose s'est mal passé.\");\n" \
+	"    //console.warn(\"Oups! Quelque chose s'est mal passé.\");\n" \
 	"  });\n" \
 	"\n" \
 	"  // Configurez la requête\n" \

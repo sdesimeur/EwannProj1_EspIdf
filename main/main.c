@@ -35,12 +35,11 @@
 #include "common.h"
 #include "math.h"
 
-#define HW_TIMER_IN_US 20000
+#define HW_TIMER_IN_US 10000
 
 void wifi_init_sta(void);
 void wifi_init_softap();
 httpd_handle_t start_webserver(void);
-double get_XYZT_abs(XYZT a);
 
 int wifi_mode_not_setted = 1;
 
@@ -251,38 +250,42 @@ static esp_err_t i2c_example_master_mpu6050_init(i2c_port_t i2c_num)
     ESP_ERROR_CHECK(gpio_set_level(GPIO_NUM_5, 1));
     vTaskDelay(100 / portTICK_RATE_MS);
     i2c_example_master_init();
-    vTaskDelay(100 / portTICK_RATE_MS);
+    vTaskDelay(500 / portTICK_RATE_MS);
 
-    cmd_data[0] = 0x80;    // reset mpu6050
-    ESP_ERROR_CHECK_WITHOUT_ABORT(i2c_example_master_mpu6050_write(i2c_num, 0x6B, cmd_data, 1));
-    vTaskDelay(100 / portTICK_RATE_MS);
+    cmd_data[0] = 0x40;    // reset mpu6050
+    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, 0x6B, cmd_data, 1));
+    vTaskDelay(1000 / portTICK_RATE_MS);
     //cmd_data[0] = 0x06;    // Set the Low Pass Filter
-    //ESP_ERROR_CHECK_WITHOUT_ABORT(i2c_example_master_mpu6050_write(i2c_num, CONFIG, cmd_data, 1));
-    cmd_data[0] = 0x10;
-    ESP_ERROR_CHECK_WITHOUT_ABORT(i2c_example_master_mpu6050_write(i2c_num, 0x6B, cmd_data, 1));
-    vTaskDelay(100 / portTICK_RATE_MS);
+    //ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, CONFIG, cmd_data, 1));
+    //cmd_data[0] = 0x10;
+    //ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, 0x6B, cmd_data, 1));
+    //vTaskDelay(100 / portTICK_RATE_MS);
     cmd_data[0] = 0x00;    // Set the GYRO range
-    ESP_ERROR_CHECK_WITHOUT_ABORT(i2c_example_master_mpu6050_write(i2c_num, 0x1B, cmd_data, 1));
+    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, 0x1B, cmd_data, 1));
     cmd_data[0] = 0x10;    // Set the ACCEL range
-    ESP_ERROR_CHECK_WITHOUT_ABORT(i2c_example_master_mpu6050_write(i2c_num, 0x1C, cmd_data, 1));
+    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, 0x1C, cmd_data, 1));
     cmd_data[0] = 0x00;
-    ESP_ERROR_CHECK_WITHOUT_ABORT(i2c_example_master_mpu6050_write(i2c_num, 0x38, cmd_data, 1));
+    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, 0x38, cmd_data, 1));
     //cmd_data = 0x01;
     who_am_i = 0;
     i2c_example_master_mpu6050_read(I2C_EXAMPLE_MASTER_NUM, WHO_AM_I, &who_am_i, 1);
     ESP_LOGI(TAG, "WHO_AM_I: 0x%02x\n", who_am_i);
     vTaskDelay(500 / portTICK_RATE_MS);
     accelero_started = 1;
+            ESP_LOGI(TAG, "Accelero started\n");
     return ESP_OK;
 }
+
+static int ret_hw_timer_callback = -6;;
 
 static void hw_timer_callback(void* t)
 {
     time_in_s += (double)HW_TIMER_IN_US / 1000000;
-    int ret;
-        
+    static int counter = 0;
+    counter++;
     uint16_t val;
-        ret = adc_read (&val);
+
+        int ret = adc_read (&val);
         if (ret == ESP_OK) {
             double valD = (double)val;
             valD *= 3;
@@ -306,8 +309,8 @@ static void hw_timer_callback(void* t)
                 magnetoField /= 4;
             }
         }
-    
-        if (accelero_started == 0) return;
+    if (accelero_started == 0) return;
+    if ((counter % 5) == 0) {
     uint8_t sensor_data[14];
     //uint8_t who_am_i, i;
     //static uint32_t error_count = 0;
@@ -324,13 +327,10 @@ static void hw_timer_callback(void* t)
         }
         */
         memset(sensor_data, 0, 14);
-            ESP_LOGI(TAG, "Accel read 1\n");
-        ret = i2c_example_master_mpu6050_read(I2C_EXAMPLE_MASTER_NUM, 0x3B, sensor_data, 14);
-            ESP_LOGI(TAG, "Accel read 2\n");
+        ret_hw_timer_callback = i2c_example_master_mpu6050_read(I2C_EXAMPLE_MASTER_NUM, 0x3B, sensor_data, 14);
         //ret = i2c_example_master_mpu6050_read(I2C_EXAMPLE_MASTER_NUM, 0x3C, sensor_data, 1);
 
-        if (ret == ESP_OK) {
-            ESP_LOGI(TAG, "Accel read 3\n");
+        if (ret_hw_timer_callback == ESP_OK) {
             /*
             ESP_LOGI(TAG, "*******************\n");
             ESP_LOGI(TAG, "WHO_AM_I: 0x%02x\n", who_am_i);
@@ -358,7 +358,7 @@ static void hw_timer_callback(void* t)
             accelWG.t = time_in_s;
             
             double tmpD;
-            tmpD = get_XYZT_abs(accelWG);
+            tmpD = get_XYZT_abs(&accelWG);
             if (tmpD > accelMaxWG) accelMaxWG = tmpD;
 
             tmp = (sensor_data[8] << 8) | sensor_data[9];
@@ -418,6 +418,7 @@ static void hw_timer_callback(void* t)
                 accelI.z /= init_accel_speed_counter;
             }
         }
+    }
 
         //vTaskDelay(100 / portTICK_RATE_MS);
     //}
@@ -425,11 +426,11 @@ static void hw_timer_callback(void* t)
     //i2c_driver_delete(I2C_EXAMPLE_MASTER_NUM);
 }
 
-double get_XYZT_abs(XYZT a) {
+double get_XYZT_abs(XYZT *a) {
     double ret = 0;
-    ret += a.x * a.x;
-    ret += a.y * a.y;
-    ret += a.z * a.z;
+    ret += a->x * a->x;
+    ret += a->y * a->y;
+    ret += a->z * a->z;
     ret = sqrt(ret);
     return ret;
 }
@@ -471,7 +472,8 @@ static void i2c_task_example(void *arg)
                 accel_speed_has_to_be_switch = 0;
                 i2c_example_master_mpu6050_init(I2C_EXAMPLE_MASTER_NUM);
             }
-            vTaskDelay(1000 / portTICK_RATE_MS);
+                    ESP_LOGW(TAG, "Pb with accel: %d\n", ret_hw_timer_callback);
+            vTaskDelay(500 / portTICK_RATE_MS);
     }
     i2c_driver_delete(I2C_EXAMPLE_MASTER_NUM);
 }
@@ -555,7 +557,8 @@ void app_main(void)
                 accel_speed_has_to_be_switch = 0;
                 i2c_example_master_mpu6050_init(I2C_EXAMPLE_MASTER_NUM);
             }
-            vTaskDelay(2000 / portTICK_RATE_MS);
+            ESP_LOGW(TAG, "Pb with accel: %d\n", ret_hw_timer_callback);
+            vTaskDelay(500 / portTICK_RATE_MS);
     }
 
 }

@@ -28,7 +28,7 @@ extern double magnetoFieldMean;
 extern double magnetoFieldMax;
 extern double magnetoFieldMin;
 
-double get_XYZT_abs(XYZT a);
+double get_XYZT_abs(XYZT *a);
 double get_magnetofield ();
 double get_magnetofieldMean ();
 double get_magnetofieldMax ();

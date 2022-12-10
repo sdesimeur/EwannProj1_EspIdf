@@ -187,10 +187,12 @@ esp_err_t rpc_getaccel_get_handler(httpd_req_t *req)
         }
         free(buf);
     }
-    XYZT *a = &accelN;
-    XYZT *b = &accelI;
-    double c = get_XYZT_abs(accelN);
-    double d = get_XYZT_abs(speed);
+    XYZT *a;
+    a = &accelN;
+    XYZT *b;
+    b = &accelI;
+    double c = get_XYZT_abs(&accelN);
+    double d = get_XYZT_abs(&speed);
     double e = accelMaxWG;
     sprintf(resp_str, "{ "
             "\"accelMaxWG\" : %d.%09d , "
