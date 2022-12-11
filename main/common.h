@@ -27,6 +27,7 @@ extern double magnetoField;
 extern double magnetoFieldMean;
 extern double magnetoFieldMax;
 extern double magnetoFieldMin;
+extern int GPIO_levels[];
 
 double get_XYZT_abs(XYZT *a);
 double get_magnetofield ();

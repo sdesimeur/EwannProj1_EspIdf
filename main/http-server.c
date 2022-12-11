@@ -216,7 +216,6 @@ httpd_uri_t rpc_getter = {
     .user_ctx = NULL
 };
 
-int gpio_on[17] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 esp_err_t rpc_command_handler(httpd_req_t *req)
 {
     char*  buf;
@@ -255,9 +254,9 @@ esp_err_t rpc_command_handler(httpd_req_t *req)
                 char param1[3];
                 if (httpd_query_key_value(buf, "level", param1, sizeof(param1)) == ESP_OK) {
                     int new = (param1[0] == '0')?0:1;
-                    if (gpio_on[gpio_num] != new) {
+                    if (GPIO_levels[gpio_num] != new) {
                         gpio_set_level(gpio_num, new);
-                        gpio_on[gpio_num] = new;
+                        GPIO_levels[gpio_num] = new;
                     }
                 }
             }
