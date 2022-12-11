@@ -4,15 +4,15 @@
 	"  var XHR = new XMLHttpRequest();\n" \
 	"  XHR.addEventListener('load', function(event) {\n" \
 	"      if (event.target.responseURL.endsWith(\"/getAllValues\")) {\n" \
-	"            var tmp = JSON.parse(event.target.response);\n" \
-	"            var el = \"magnet\";\n" \
-	"              document.getElementById(el).innerHTML = parseFloat(tmp.magnet.val) + \"T\";\n" \
-	"              el = 'magnetMin';\n" \
-	"              document.getElementById(el).innerHTML = parseFloat(tmp.magnet.Min) + \"T\";\n" \
-	"              el = 'magnetMax';\n" \
-	"              document.getElementById(el).innerHTML = parseFloat(tmp.magnet.Max) + \"T\";\n" \
-	"              el = 'magnetMean';\n" \
-	"              document.getElementById(el).innerHTML = parseFloat(tmp.magnet.Mean) + \"T\";\n" \
+	"          var tmp = JSON.parse(event.target.response);\n" \
+	"          var el = \"magnet\";\n" \
+	"          document.getElementById(el).innerHTML = parseFloat(tmp.magnet.val) + \"T\";\n" \
+	"          el = 'magnetMin';\n" \
+	"          document.getElementById(el).innerHTML = parseFloat(tmp.magnet.Min) + \"T\";\n" \
+	"          el = 'magnetMax';\n" \
+	"          document.getElementById(el).innerHTML = parseFloat(tmp.magnet.Max) + \"T\";\n" \
+	"          el = 'magnetMean';\n" \
+	"          document.getElementById(el).innerHTML = parseFloat(tmp.magnet.Mean) + \"T\";\n" \
 	"          \n" \
 	"          var count = parseFloat(tmp.counter.val);\n" \
 	"          var duration = parseFloat(tmp.counter.duration);\n" \
@@ -71,26 +71,24 @@
 	"}\n" \
 	"function config_magneto_on_off () {\n" \
 	"    var checkon = document.getElementById(\"switch_config\").checked;\n" \
-	"    sendData(\"rpc/configMagneto?config=\" + (checkon?\"1\":\"0\"));\n" \
+	"    sendData(\"/command?initMagnetoField=\" + (checkon?\"1\":\"0\"));\n" \
 	"}\n" \
 	"function init_accel_speed () {\n" \
-	"    sendData(\"rpc/initAccelSpeed\");\n" \
+	"    sendData(\"/command?initAccelSpeed=1\");\n" \
 	"}\n" \
 	"function accel_on() {\n" \
-	"    sendData(\"rpc/startAccelSpeed\");\n" \
+	"    sendData(\"/command?startAccelSpeed=1\");\n" \
 	"    document.getElementById(\"accel_speed_on\").hidden=true;\n" \
 	"    document.getElementById(\"checkD8\").hidden=true;\n" \
 	"}\n" \
 	"function D7_on_off() {\n" \
 	"    var checkon = document.getElementById(\"checkD7\").checked;\n" \
-	"    sendData(\"rpc/startD7?start=\" + (checkon?\"1\":\"0\"));\n" \
+	"    sendData(\"/command?gpio=13&level=\" + (checkon?\"1\":\"0\"));\n" \
 	"}\n" \
 	"function D8_on_off() {\n" \
 	"    var checkon = document.getElementById(\"checkD8\").checked;\n" \
 	"    document.getElementById(\"allAccelView\").hidden=true;\n" \
-	"    sendData(\"rpc/startD8?start=\" + (checkon?\"1\":\"0\"));\n" \
-	"}\n" \
-	"function read_all () {\n" \
+	"    sendData(\"/command?gpio=15&level=\" + (checkon?\"1\":\"0\"));\n" \
 	"}\n" \
 	"\n" \
 	"document.onreadystatechange = function () {\n" \
@@ -112,14 +110,14 @@
 	"      <legend>Config magneto</legend>\n" \
 	"        <input type=\"checkbox\" id=\"switch_config\" name=\"switch_config\" onchange=\"config_magneto_on_off()\">\n" \
 	"    </fieldset>\n" \
-	"      <div id=\"magnet\" name=\"magnet\">\n" \
-	"      </div>\n" \
-	"      <div id=\"magnetMean\" name=\"magnetMean\">\n" \
-	"      </div>\n" \
-	"      <div id=\"magnetMax\" name=\"magnetMax\">\n" \
-	"      </div>\n" \
-	"      <div id=\"magnetMin\" name=\"magnetMin\">\n" \
-	"      </div>\n" \
+	"      Value: <span id=\"magnet\" name=\"magnet\">\n" \
+	"      </span><br>\n" \
+	"      Mean: <span id=\"magnetMean\" name=\"magnetMean\">\n" \
+	"      </span><br>\n" \
+	"      Max: <span id=\"magnetMax\" name=\"magnetMax\">\n" \
+	"      </span><br>\n" \
+	"      Min: <span id=\"magnetMin\" name=\"magnetMin\">\n" \
+	"      </span>\n" \
 	"    </fieldset>\n" \
 	"    <fieldset id=\"allAccelView\">\n" \
 	"      <legend>Accel and Speed</legend>\n" \

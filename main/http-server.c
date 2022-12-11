@@ -216,44 +216,8 @@ httpd_uri_t rpc_getter = {
     .user_ctx = NULL
 };
 
-esp_err_t rpc_initaccelspeed_get_handler(httpd_req_t *req)
-{
-    char*  buf;
-    size_t buf_len;
-
-    /* Get header value string length and allocate memory for length + 1,
-     * extra byte for null termination */
-    buf_len = httpd_req_get_hdr_value_len(req, "Host") + 1;
-    if (buf_len > 1) {
-        buf = malloc(buf_len);
-        /* Copy null terminated value string into buffer */
-        if (httpd_req_get_hdr_value_str(req, "Host", buf, buf_len) == ESP_OK) {
-            //ESP_LOGI(TAG, "Found header => Host: %s", buf);
-        }
-        free(buf);
-    }
-    init_accel_speed();
-    const char * resp_str1 = "1";
-    httpd_resp_send(req, resp_str1, strlen(resp_str1));
-
-    /* After sending the HTTP response the old HTTP request
-     * headers are lost. Check if HTTP request headers can be read now. */
-    if (httpd_req_get_hdr_value_len(req, "Host") == 0) {
-        //ESP_LOGI(TAG, "Request headers lost");
-    }
-    return ESP_OK;
-}
-
-httpd_uri_t rpc_initaccelspeed = {
-    .uri       = "/rpc/initAccelSpeed",
-    .method    = HTTP_GET,
-    .handler   = rpc_initaccelspeed_get_handler,
-    /* Let's pass response string in user
-     * context to demonstrate it's usage */
-    .user_ctx = NULL
-};
-
-esp_err_t rpc_configmagneto_get_handler(httpd_req_t *req)
+int gpio_on[17] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+esp_err_t rpc_command_handler(httpd_req_t *req)
 {
     char*  buf;
     size_t buf_len;
@@ -275,107 +239,27 @@ esp_err_t rpc_configmagneto_get_handler(httpd_req_t *req)
     if (buf_len > 1) {
         buf = malloc(buf_len);
         if (httpd_req_get_url_query_str(req, buf, buf_len) == ESP_OK) {
-            char param[32];
+            char param[16];
             // Get value of expected key from query string
-            if (httpd_query_key_value(buf, "config", param, sizeof(param)) == ESP_OK) {
+            if (httpd_query_key_value(buf, "initMagnetoField", param, sizeof(param)) == ESP_OK) {
                 magnetoFieldInit = (param[0] == '0')?0:1;
                 //ESP_LOGI(TAG, "Found URL query => %s = %s", buf, param);
-            }
-        }
-        free(buf);
-    }
-    
-    const char * resp_str1 = "1";
-    httpd_resp_send(req, resp_str1, strlen(resp_str1));
-
-    /* After sending the HTTP response the old HTTP request
-     * headers are lost. Check if HTTP request headers can be read now. */
-    if (httpd_req_get_hdr_value_len(req, "Host") == 0) {
-        //ESP_LOGI(TAG, "Request headers lost");
-    }
-    return ESP_OK;
-}
-
-httpd_uri_t rpc_configmagneto = {
-    .uri       = "/rpc/configMagneto",
-    .method    = HTTP_GET,
-    .handler   = rpc_configmagneto_get_handler,
-    /* Let's pass response string in user
-     * context to demonstrate it's usage */
-    .user_ctx = NULL
-};
-
-
-esp_err_t rpc_accel_start_handler(httpd_req_t *req)
-{
-    char*  buf;
-    size_t buf_len;
-
-    /* Get header value string length and allocate memory for length + 1,
-     * extra byte for null termination */
-    buf_len = httpd_req_get_hdr_value_len(req, "Host") + 1;
-    if (buf_len > 1) {
-        buf = malloc(buf_len);
-        /* Copy null terminated value string into buffer */
-        if (httpd_req_get_hdr_value_str(req, "Host", buf, buf_len) == ESP_OK) {
-            //ESP_LOGI(TAG, "Found header => Host: %s", buf);
-        }
-        free(buf);
-    }
-    accel_speed_has_to_be_switch = 1;
-    
-    const char * resp_str1 = "1";
-    httpd_resp_send(req, resp_str1, strlen(resp_str1));
-
-    /* After sending the HTTP response the old HTTP request
-     * headers are lost. Check if HTTP request headers can be read now. */
-    if (httpd_req_get_hdr_value_len(req, "Host") == 0) {
-        //ESP_LOGI(TAG, "Request headers lost");
-    }
-    return ESP_OK;
-}
-
-httpd_uri_t rpc_accelstart = {
-    .uri       = "/rpc/startAccelSpeed",
-    .method    = HTTP_GET,
-    .handler   = rpc_accel_start_handler,
-    /* Let's pass response string in user
-     * context to demonstrate it's usage */
-    .user_ctx = NULL
-};
-
-int D8_on = 0;
-esp_err_t rpc_D8_on_off_handler(httpd_req_t *req)
-{
-    char*  buf;
-    size_t buf_len;
-
-    /* Get header value string length and allocate memory for length + 1,
-     * extra byte for null termination */
-    buf_len = httpd_req_get_hdr_value_len(req, "Host") + 1;
-    if (buf_len > 1) {
-        buf = malloc(buf_len);
-        /* Copy null terminated value string into buffer */
-        if (httpd_req_get_hdr_value_str(req, "Host", buf, buf_len) == ESP_OK) {
-            //ESP_LOGI(TAG, "Found header => Host: %s", buf);
-        }
-        free(buf);
-    }
-    /* Read URL query string length and allocate memory for length + 1,
-     * extra byte for null termination */
-    buf_len = httpd_req_get_url_query_len(req) + 1;
-    if (buf_len > 1) {
-        buf = malloc(buf_len);
-        if (httpd_req_get_url_query_str(req, buf, buf_len) == ESP_OK) {
-            char param[32];
-            // Get value of expected key from query string
-            if (httpd_query_key_value(buf, "start", param, sizeof(param)) == ESP_OK) {
-                int new = (param[0] == '0')?0:1;
-                if (D8_on != new) {
-                    gpio_set_level(GPIO_NUM_15, new);
-                    D8_on = new;
+            } else if (httpd_query_key_value(buf, "initAccelSpeed", param, sizeof(param)) == ESP_OK) {
+                init_accel_speed();
+            } else if (httpd_query_key_value(buf, "startAccelSpeed", param, sizeof(param)) == ESP_OK) {
+                accel_speed_has_to_be_switch = 1;
+                ESP_LOGW(TAG, "start accel speed");
+            } else if (httpd_query_key_value(buf, "gpio", param, sizeof(param)) == ESP_OK) {
+                int gpio_num = 0;
+                sscanf(param, "%d", &gpio_num);
+                char param1[3];
+                if (httpd_query_key_value(buf, "level", param1, sizeof(param1)) == ESP_OK) {
+                    int new = (param1[0] == '0')?0:1;
+                    if (gpio_on[gpio_num] != new) {
+                        gpio_set_level(gpio_num, new);
+                        gpio_on[gpio_num] = new;
+                    }
                 }
-                ESP_LOGI(TAG, "Found URL query => %s = %s", buf, param);
             }
         }
         free(buf);
@@ -392,73 +276,14 @@ esp_err_t rpc_D8_on_off_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
-httpd_uri_t rpc_D8_on_off = {
-    .uri       = "/rpc/startD8",
+httpd_uri_t rpc_command = {
+    .uri       = "/command",
     .method    = HTTP_GET,
-    .handler   = rpc_D8_on_off_handler,
+    .handler   = rpc_command_handler,
     /* Let's pass response string in user
      * context to demonstrate it's usage */
     .user_ctx = NULL
 };
-
-
-int D7_on = 0;
-esp_err_t rpc_D7_on_off_handler(httpd_req_t *req)
-{
-    char*  buf;
-    size_t buf_len;
-
-    /* Get header value string length and allocate memory for length + 1,
-     * extra byte for null termination */
-    buf_len = httpd_req_get_hdr_value_len(req, "Host") + 1;
-    if (buf_len > 1) {
-        buf = malloc(buf_len);
-        /* Copy null terminated value string into buffer */
-        if (httpd_req_get_hdr_value_str(req, "Host", buf, buf_len) == ESP_OK) {
-            //ESP_LOGI(TAG, "Found header => Host: %s", buf);
-        }
-        free(buf);
-    }
-    /* Read URL query string length and allocate memory for length + 1,
-     * extra byte for null termination */
-    buf_len = httpd_req_get_url_query_len(req) + 1;
-    if (buf_len > 1) {
-        buf = malloc(buf_len);
-        if (httpd_req_get_url_query_str(req, buf, buf_len) == ESP_OK) {
-            char param[32];
-            // Get value of expected key from query string
-            if (httpd_query_key_value(buf, "start", param, sizeof(param)) == ESP_OK) {
-                int new = (param[0] == '0')?0:1;
-                if (D7_on != new) {
-                    gpio_set_level(GPIO_NUM_13, new);
-                    D7_on = new;
-                }
-                //ESP_LOGI(TAG, "Found URL query => %s = %s", buf, param);
-            }
-        }
-        free(buf);
-    }
-    
-    const char * resp_str1 = "1";
-    httpd_resp_send(req, resp_str1, strlen(resp_str1));
-
-    /* After sending the HTTP response the old HTTP request
-     * headers are lost. Check if HTTP request headers can be read now. */
-    if (httpd_req_get_hdr_value_len(req, "Host") == 0) {
-        //ESP_LOGI(TAG, "Request headers lost");
-    }
-    return ESP_OK;
-}
-
-httpd_uri_t rpc_D7_on_off = {
-    .uri       = "/rpc/startD7",
-    .method    = HTTP_GET,
-    .handler   = rpc_D7_on_off_handler,
-    /* Let's pass response string in user
-     * context to demonstrate it's usage */
-    .user_ctx = NULL
-};
-
 
 httpd_handle_t start_webserver(void)
 {
@@ -472,11 +297,7 @@ httpd_handle_t start_webserver(void)
         //ESP_LOGI(TAG, "Registering URI handlers");
         httpd_register_uri_handler(server, &root_index);
         httpd_register_uri_handler(server, &rpc_getter);
-        httpd_register_uri_handler(server, &rpc_accelstart);
-        httpd_register_uri_handler(server, &rpc_initaccelspeed);
-        httpd_register_uri_handler(server, &rpc_configmagneto);
-        httpd_register_uri_handler(server, &rpc_D7_on_off);
-        httpd_register_uri_handler(server, &rpc_D8_on_off);
+        httpd_register_uri_handler(server, &rpc_command);
         //httpd_register_uri_handler(server, &echo);
         //httpd_register_uri_handler(server, &ctrl);
         return server;

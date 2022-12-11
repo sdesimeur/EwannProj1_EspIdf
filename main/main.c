@@ -51,8 +51,8 @@ httpd_handle_t server = NULL;
 
 double magnetoField = 1000000;
 double magnetoFieldMean = 0;
-double magnetoFieldMax = -1000000;
-double magnetoFieldMin = 1000000;
+double magnetoFieldMax = 0;
+double magnetoFieldMin = 0;
 int magnetoFieldInit = 0;
 
 int accelero_started = 0;
@@ -299,8 +299,10 @@ static void hw_timer_callback(void* t)
             valD /= 2048;
             valD /= 18;
             if (magnetoFieldInit == 0) {
+            } else if (magnetoFieldInit == 1) {
                 magnetoFieldMin = 1000000;
                 magnetoFieldMax = -1000000;
+                magnetoFieldInit = 2;
             } else {
                 if (magnetoFieldMax < valD) magnetoFieldMax = valD;
                 if (magnetoFieldMin > valD) magnetoFieldMin = valD;
