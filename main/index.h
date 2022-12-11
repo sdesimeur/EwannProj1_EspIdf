@@ -3,22 +3,20 @@
 	"function sendData(action) {\n" \
 	"  var XHR = new XMLHttpRequest();\n" \
 	"  XHR.addEventListener('load', function(event) {\n" \
-	"      if (event.target.responseURL.endsWith(\"/rpc/getMagnetField\")) {\n" \
+	"      if (event.target.responseURL.endsWith(\"/getAllValues\")) {\n" \
 	"            var tmp = JSON.parse(event.target.response);\n" \
 	"            var el = \"magnet\";\n" \
-	"              document.getElementById(el).innerHTML = parseFloat(tmp.magnet) + \"T\";\n" \
+	"              document.getElementById(el).innerHTML = parseFloat(tmp.magnet.val) + \"T\";\n" \
 	"              el = 'magnetMin';\n" \
-	"              document.getElementById(el).innerHTML = parseFloat(tmp.magnetMin) + \"T\";\n" \
+	"              document.getElementById(el).innerHTML = parseFloat(tmp.magnet.Min) + \"T\";\n" \
 	"              el = 'magnetMax';\n" \
-	"              document.getElementById(el).innerHTML = parseFloat(tmp.magnetMax) + \"T\";\n" \
+	"              document.getElementById(el).innerHTML = parseFloat(tmp.magnet.Max) + \"T\";\n" \
 	"              el = 'magnetMean';\n" \
-	"              document.getElementById(el).innerHTML = parseFloat(tmp.magnetMean) + \"T\";\n" \
-	"      } else if (event.target.responseURL.endsWith(\"rpc/getCounter\")) {\n" \
-	"          var tmp = JSON.parse(event.target.response);\n" \
-	"          var count = parseFloat(tmp.count);\n" \
-	"          var duration = parseFloat(tmp.duration);\n" \
-	"          var freq = parseFloat(tmp.freq);\n" \
-	"          var el = \"counter\";\n" \
+	"              document.getElementById(el).innerHTML = parseFloat(tmp.magnet.Mean) + \"T\";\n" \
+	"          \n" \
+	"          var count = parseFloat(tmp.counter.val);\n" \
+	"          var duration = parseFloat(tmp.counter.duration);\n" \
+	"          var freq = parseFloat(tmp.counter.freq);\n" \
 	"          var tmp1 = \"duration:\" + duration + \"s<br>count:\" + count + \"<br>frequence: \" + freq + \"/s<br> speed:\";\n" \
 	"          var s = (freq * parseFloat(document.getElementById(\"counter_val_per_pulse\").value));\n" \
 	"          var u = document.getElementById(\"counter_time_unit\").value;\n" \
@@ -36,19 +34,21 @@
 	"          tmp1 += s;\n" \
 	"          tmp1 += document.getElementById(\"counter_val_unit\").value;\n" \
 	"          tmp1 += \"/\" + u;\n" \
+	"          el = \"counter\";\n" \
 	"          document.getElementById(el).innerHTML = tmp1;\n" \
-	"      } else if (event.target.responseURL.endsWith(\"/rpc/getAccel\")) {\n" \
-	"            var tmp = JSON.parse(event.target.response);\n" \
+	"          \n" \
 	"          var el = \"accelRaw\";\n" \
-	"          document.getElementById(el).innerHTML = JSON.stringify(tmp.accelN);\n" \
+	"          document.getElementById(el).innerHTML = JSON.stringify(tmp.accel.N);\n" \
 	"              el = \"accelMaxWG\";\n" \
-	"          document.getElementById(el).innerHTML = parseFloat(tmp.accelMaxWG);\n" \
+	"          document.getElementById(el).innerHTML = parseFloat(tmp.accel.MaxWG);\n" \
 	"              el = \"accelRawI\";\n" \
-	"          document.getElementById(el).innerHTML = JSON.stringify(tmp.accelI);\n" \
+	"          document.getElementById(el).innerHTML = JSON.stringify(tmp.accel.I);\n" \
 	"              el = \"accel\";\n" \
-	"          document.getElementById(el).innerHTML = parseFloat(tmp.accel)+\"g<br>\"+(parseFloat(tmp.accel)*9.80655)+\"m/s^2\";\n" \
+	"          document.getElementById(el).innerHTML = parseFloat(tmp.accel.val)+\"g<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\"+(parseFloat(tmp.accel.val)*9.80655)+\"m/s^2\";\n" \
+	"              el = \"accelWG\";\n" \
+	"          document.getElementById(el).innerHTML = parseFloat(tmp.accel.WG)+\"g<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\"+(parseFloat(tmp.accel.WG)*9.80655)+\"m/s^2\";\n" \
 	"              el = \"speed\";\n" \
-	"          document.getElementById(el).innerHTML = parseFloat(tmp.speed) + \"m/s<br>\" + (parseFloat(tmp.speed)*3.6) + \"km/h\";\n" \
+	"          document.getElementById(el).innerHTML = parseFloat(tmp.accel.speed) + \"m/s<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\" + (parseFloat(tmp.accel.speed)*3.6) + \"km/h\";\n" \
 	"\n" \
 	"      } else {\n" \
 	"          console.warn(event.target.response);\n" \
@@ -76,21 +76,30 @@
 	"function init_accel_speed () {\n" \
 	"    sendData(\"rpc/initAccelSpeed\");\n" \
 	"}\n" \
-	"function accel_on_off() {\n" \
-	"    var checkon = document.getElementById(\"accel_speed_on\").checked;\n" \
-	"    sendData(\"rpc/startAccelSpeed?start=\" + (checkon?\"1\":\"0\"));\n" \
+	"function accel_on() {\n" \
+	"    sendData(\"rpc/startAccelSpeed\");\n" \
+	"    document.getElementById(\"accel_speed_on\").hidden=true;\n" \
+	"    document.getElementById(\"checkD8\").hidden=true;\n" \
+	"}\n" \
+	"function D7_on_off() {\n" \
+	"    var checkon = document.getElementById(\"checkD7\").checked;\n" \
+	"    sendData(\"rpc/startD7?start=\" + (checkon?\"1\":\"0\"));\n" \
+	"}\n" \
+	"function D8_on_off() {\n" \
+	"    var checkon = document.getElementById(\"checkD8\").checked;\n" \
+	"    document.getElementById(\"allAccelView\").hidden=true;\n" \
+	"    sendData(\"rpc/startD8?start=\" + (checkon?\"1\":\"0\"));\n" \
 	"}\n" \
 	"function read_all () {\n" \
-	"    sendData(\"rpc/getMagnetField\");\n" \
-	"    sendData(\"rpc/getAccel\");\n" \
-	"    sendData(\"rpc/getCounter\");\n" \
 	"}\n" \
 	"\n" \
 	"document.onreadystatechange = function () {\n" \
 	"  var state = document.readyState;\n" \
 	"  if (state == 'interactive') {\n" \
 	"  } else if (state == 'complete') {\n" \
-	"   setInterval(read_all, 500);\n" \
+	"      setInterval(() => {\n" \
+	"        sendData(\"/getAllValues\");\n" \
+	"      }, 500);\n" \
 	"  }\n" \
 	"};\n" \
 	"\n" \
@@ -112,20 +121,21 @@
 	"      <div id=\"magnetMin\" name=\"magnetMin\">\n" \
 	"      </div>\n" \
 	"    </fieldset>\n" \
-	"    <fieldset>\n" \
+	"    <fieldset id=\"allAccelView\">\n" \
 	"      <legend>Accel and Speed</legend>\n" \
 	"        <fieldset>\n" \
 	"            <legend>Init accel speed</legend>\n" \
-	"            Start accel module: <input type=\"checkbox\" id=\"accel_speed_on\" name=\"accel_speed_on\" onchange=\"accel_on_off()\"><br>\n" \
+	"            <input type=\"button\" id=\"accel_speed_on\" name=\"accel_speed_on\" onclick=\"accel_on()\" value=\"Start accel module\"><br>\n" \
 	"            <input type=\"button\" id=\"button_init_accel_speed\" name=\"button_init_accel_speed\" onclick=\"init_accel_speed()\" value=\"Reset\">\n" \
 	"        </fieldset>\n" \
 	"      Speed :<span id=\"speed\" name=\"speed\"></span><br>\n" \
 	"      Accel: <span id=\"accel\" name=\"accel\"></span><br>\n" \
-	"      Accel: <span id=\"accelRaw\" name=\"accelRaw\"></span><br>\n" \
+	"      Accel vector: <span id=\"accelRaw\" name=\"accelRaw\"></span><br>\n" \
+	"      AccelWG: <span id=\"accelWG\" name=\"accelWG\"></span><br>\n" \
 	"      Accel max.: <span id=\"accelMaxWG\" name=\"accelMaxWG\"></span><br>\n" \
-	"      Accel initial: <span id=\"accelRawI\" name=\"accelRawI\"></span>\n" \
+	"      Accel vector initial: <span id=\"accelRawI\" name=\"accelRawI\"></span>\n" \
 	"    </fieldset>\n" \
-	"    <fieldset>\n" \
+	"    <fieldset id=\"countView\">\n" \
 	"      <legend>Count</legend>\n" \
 	"        <fieldset>\n" \
 	"            <legend>Parametrage vitesse par roue codeuse</legend>\n" \
@@ -139,6 +149,11 @@
 	"                <option value=\"m\">minute</option>\n" \
 	"                <option value=\"h\">heure</option>\n" \
 	"            </select>\n" \
+	"        </fieldset>\n" \
+	"        <fieldset>\n" \
+	"            <legend>Demarrage des leds</legend>\n" \
+	"            D7: <input type=\"checkbox\" id=\"checkD7\" onchange=\"D7_on_off()\"><br> \n" \
+	"            D8: <input type=\"checkbox\" id=\"checkD8\" onchange=\"D8_on_off()\"><br> \n" \
 	"        </fieldset>\n" \
 	"      <div id=\"counter\" name=\"counter\">\n" \
 	"      </div>\n" \

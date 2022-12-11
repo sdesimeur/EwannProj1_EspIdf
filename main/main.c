@@ -58,10 +58,10 @@ int magnetoFieldInit = 0;
 int accelero_started = 0;
 int accel_speed_has_to_be_switch = 0;
 
+XYZT accelWG = {0, 0, 0, 0};
 XYZT gyro = {0, 0, 0, 0};
 XYZT accelI = {0, 0, 0, 0};
 XYZT accelN = {0, 0, 0, 0};
-XYZT accelWG = {0, 0, 0, 0};
 XYZT accelP = {0, 0, 0, 0};
 XYZT speed = {0, 0, 0, 0};
 
@@ -247,14 +247,16 @@ static esp_err_t i2c_example_master_mpu6050_init(i2c_port_t i2c_num)
 {
     uint8_t cmd_data[4];
     unsigned int state = 0;
-    ESP_ERROR_CHECK(gpio_set_level(GPIO_NUM_5, 1));
+    ESP_ERROR_CHECK(gpio_set_level(GPIO_NUM_15, 1));
     vTaskDelay(100 / portTICK_RATE_MS);
     i2c_example_master_init();
     vTaskDelay(500 / portTICK_RATE_MS);
 
-    cmd_data[0] = 0x40;    // reset mpu6050
+    cmd_data[0] = 0x80;    // reset mpu6050
     ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, 0x6B, cmd_data, 1));
     vTaskDelay(1000 / portTICK_RATE_MS);
+    cmd_data[0] = 0x10;    // reset mpu6050
+    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, 0x6B, cmd_data, 1));
     //cmd_data[0] = 0x06;    // Set the Low Pass Filter
     //ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, CONFIG, cmd_data, 1));
     //cmd_data[0] = 0x10;
@@ -276,7 +278,11 @@ static esp_err_t i2c_example_master_mpu6050_init(i2c_port_t i2c_num)
     return ESP_OK;
 }
 
-static int ret_hw_timer_callback = -6;;
+static int ret_hw_timer_callback = -6;
+static unsigned int ret_hw_timer_callback_error = 0; 
+static unsigned int ret_hw_timer_callback_OK = 0; 
+static unsigned int ret_hw_timer_callback_count = 0; 
+static unsigned int ret_hw_timer_callback_end = 0; 
 
 static void hw_timer_callback(void* t)
 {
@@ -329,8 +335,10 @@ static void hw_timer_callback(void* t)
         memset(sensor_data, 0, 14);
         ret_hw_timer_callback = i2c_example_master_mpu6050_read(I2C_EXAMPLE_MASTER_NUM, 0x3B, sensor_data, 14);
         //ret = i2c_example_master_mpu6050_read(I2C_EXAMPLE_MASTER_NUM, 0x3C, sensor_data, 1);
+            ret_hw_timer_callback_count++;
 
         if (ret_hw_timer_callback == ESP_OK) {
+            ret_hw_timer_callback_OK++;
             /*
             ESP_LOGI(TAG, "*******************\n");
             ESP_LOGI(TAG, "WHO_AM_I: 0x%02x\n", who_am_i);
@@ -417,7 +425,10 @@ static void hw_timer_callback(void* t)
                 accelI.y /= init_accel_speed_counter;
                 accelI.z /= init_accel_speed_counter;
             }
+        } else {
+            ret_hw_timer_callback_error++; 
         }
+            ret_hw_timer_callback_end++;
     }
 
         //vTaskDelay(100 / portTICK_RATE_MS);
@@ -478,17 +489,22 @@ static void i2c_task_example(void *arg)
     i2c_driver_delete(I2C_EXAMPLE_MASTER_NUM);
 }
 
-int GPIO15_level = 0;
+int GPIO_levels[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} ;
+int GPIO_previous_levels[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} ;
+double GPIO_levels_time[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} ;
+double GPIO_previous_levels_time[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} ;
 unsigned int counter = 0;
 unsigned int counter_last = 0;
 double counter_last_time_in_s = 0;
 double counter_last_freq = 0;
 static void gpio_isr_handler(void *arg)
 {
-    int last_level = GPIO15_level;
     uint32_t gpio_num = (uint32_t) arg;
-    GPIO15_level = gpio_get_level(gpio_num);
-    if (GPIO15_level != last_level) counter++;
+    int last_level = GPIO_levels[gpio_num];
+    double last_level_time = GPIO_levels_time[gpio_num];
+    GPIO_levels[gpio_num] = gpio_get_level(gpio_num);
+    GPIO_levels_time[gpio_num] = time_in_s;
+    if (GPIO_levels[gpio_num] != last_level) counter++;
     if (counter % 2 == 0) {
         double new_time_in_s = time_in_s;
         counter_last_freq = 1 / (2 * (new_time_in_s - counter_last_time_in_s) / (counter - counter_last));
@@ -506,10 +522,15 @@ void app_main(void)
 
     ESP_ERROR_CHECK(nvs_flash_init());
     
-    ESP_ERROR_CHECK(gpio_set_direction(GPIO_NUM_5, GPIO_MODE_OUTPUT));
-    ESP_ERROR_CHECK(gpio_set_level(GPIO_NUM_5, 0));
+    gpio_config_t io_conf;
+    io_conf.pin_bit_mask = BIT(GPIO_NUM_15) | BIT(GPIO_NUM_13);
+    io_conf.mode = GPIO_MODE_OUTPUT;
+    io_conf.pull_down_en = 0;
+    io_conf.pull_up_en = 0;
+    gpio_config(&io_conf);
+    ESP_ERROR_CHECK(gpio_set_level(GPIO_NUM_15, 0));
+    ESP_ERROR_CHECK(gpio_set_level(GPIO_NUM_13, 0));
     vTaskDelay(3000 / portTICK_RATE_MS);
-
     tcpip_adapter_init();
 
     ESP_ERROR_CHECK(esp_event_loop_create_default());
@@ -530,20 +551,20 @@ void app_main(void)
             ESP_LOGI(TAG, "ADC init KO");
     }
     
-    gpio_config_t io_conf;
     //interrupt of rising edge
     io_conf.intr_type = GPIO_INTR_ANYEDGE;
     //bit mask of the pins, use GPIO4/5 here
-    io_conf.pin_bit_mask = 1ULL << GPIO_NUM_15;
+    io_conf.pin_bit_mask = BIT(GPIO_NUM_4) | BIT(GPIO_NUM_5);
     //set as input mode
     io_conf.mode = GPIO_MODE_INPUT;
+    //io_conf.pull_up_en = 1;
     //enable pull-up mode
-    io_conf.pull_up_en = 1;
     gpio_config(&io_conf);
     //change gpio intrrupt type for one pin
     //gpio_set_intr_type(GPIO_Pin_15, GPIO_INTR_ANYEDGE);
     gpio_install_isr_service(0);
-    gpio_isr_handler_add(GPIO_NUM_15, gpio_isr_handler, (void *) GPIO_NUM_15);
+    gpio_isr_handler_add(GPIO_NUM_4, gpio_isr_handler, (void *) GPIO_NUM_4);
+    gpio_isr_handler_add(GPIO_NUM_5, gpio_isr_handler, (void *) GPIO_NUM_5);
 
     hw_timer_init(hw_timer_callback, NULL);
     hw_timer_alarm_us(HW_TIMER_IN_US, true);
@@ -557,7 +578,8 @@ void app_main(void)
                 accel_speed_has_to_be_switch = 0;
                 i2c_example_master_mpu6050_init(I2C_EXAMPLE_MASTER_NUM);
             }
-            ESP_LOGW(TAG, "Pb with accel: %d\n", ret_hw_timer_callback);
+            //ESP_LOGW(TAG, "Accel errors: %d", ret_hw_timer_callback_error);
+            //ESP_LOGW(TAG, "Accel OK: %d", ret_hw_timer_callback_OK);
             vTaskDelay(500 / portTICK_RATE_MS);
     }
 

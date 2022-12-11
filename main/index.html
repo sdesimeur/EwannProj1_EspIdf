@@ -3,22 +3,20 @@
 function sendData(action) {
   var XHR = new XMLHttpRequest();
   XHR.addEventListener('load', function(event) {
-      if (event.target.responseURL.endsWith("/rpc/getMagnetField")) {
+      if (event.target.responseURL.endsWith("/getAllValues")) {
             var tmp = JSON.parse(event.target.response);
             var el = "magnet";
-              document.getElementById(el).innerHTML = parseFloat(tmp.magnet) + "T";
+              document.getElementById(el).innerHTML = parseFloat(tmp.magnet.val) + "T";
               el = 'magnetMin';
-              document.getElementById(el).innerHTML = parseFloat(tmp.magnetMin) + "T";
+              document.getElementById(el).innerHTML = parseFloat(tmp.magnet.Min) + "T";
               el = 'magnetMax';
-              document.getElementById(el).innerHTML = parseFloat(tmp.magnetMax) + "T";
+              document.getElementById(el).innerHTML = parseFloat(tmp.magnet.Max) + "T";
               el = 'magnetMean';
-              document.getElementById(el).innerHTML = parseFloat(tmp.magnetMean) + "T";
-      } else if (event.target.responseURL.endsWith("rpc/getCounter")) {
-          var tmp = JSON.parse(event.target.response);
-          var count = parseFloat(tmp.count);
-          var duration = parseFloat(tmp.duration);
-          var freq = parseFloat(tmp.freq);
-          var el = "counter";
+              document.getElementById(el).innerHTML = parseFloat(tmp.magnet.Mean) + "T";
+          
+          var count = parseFloat(tmp.counter.val);
+          var duration = parseFloat(tmp.counter.duration);
+          var freq = parseFloat(tmp.counter.freq);
           var tmp1 = "duration:" + duration + "s<br>count:" + count + "<br>frequence: " + freq + "/s<br> speed:";
           var s = (freq * parseFloat(document.getElementById("counter_val_per_pulse").value));
           var u = document.getElementById("counter_time_unit").value;
@@ -36,19 +34,21 @@ function sendData(action) {
           tmp1 += s;
           tmp1 += document.getElementById("counter_val_unit").value;
           tmp1 += "/" + u;
+          el = "counter";
           document.getElementById(el).innerHTML = tmp1;
-      } else if (event.target.responseURL.endsWith("/rpc/getAccel")) {
-            var tmp = JSON.parse(event.target.response);
+          
           var el = "accelRaw";
-          document.getElementById(el).innerHTML = JSON.stringify(tmp.accelN);
+          document.getElementById(el).innerHTML = JSON.stringify(tmp.accel.N);
               el = "accelMaxWG";
-          document.getElementById(el).innerHTML = parseFloat(tmp.accelMaxWG);
+          document.getElementById(el).innerHTML = parseFloat(tmp.accel.MaxWG);
               el = "accelRawI";
-          document.getElementById(el).innerHTML = JSON.stringify(tmp.accelI);
+          document.getElementById(el).innerHTML = JSON.stringify(tmp.accel.I);
               el = "accel";
-          document.getElementById(el).innerHTML = parseFloat(tmp.accel)+"g<br>"+(parseFloat(tmp.accel)*9.80655)+"m/s^2";
+          document.getElementById(el).innerHTML = parseFloat(tmp.accel.val)+"g<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"+(parseFloat(tmp.accel.val)*9.80655)+"m/s^2";
+              el = "accelWG";
+          document.getElementById(el).innerHTML = parseFloat(tmp.accel.WG)+"g<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"+(parseFloat(tmp.accel.WG)*9.80655)+"m/s^2";
               el = "speed";
-          document.getElementById(el).innerHTML = parseFloat(tmp.speed) + "m/s<br>" + (parseFloat(tmp.speed)*3.6) + "km/h";
+          document.getElementById(el).innerHTML = parseFloat(tmp.accel.speed) + "m/s<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + (parseFloat(tmp.accel.speed)*3.6) + "km/h";
 
       } else {
           console.warn(event.target.response);
@@ -76,21 +76,30 @@ function config_magneto_on_off () {
 function init_accel_speed () {
     sendData("rpc/initAccelSpeed");
 }
-function accel_on_off() {
-    var checkon = document.getElementById("accel_speed_on").checked;
-    sendData("rpc/startAccelSpeed?start=" + (checkon?"1":"0"));
+function accel_on() {
+    sendData("rpc/startAccelSpeed");
+    document.getElementById("accel_speed_on").hidden=true;
+    document.getElementById("checkD8").hidden=true;
+}
+function D7_on_off() {
+    var checkon = document.getElementById("checkD7").checked;
+    sendData("rpc/startD7?start=" + (checkon?"1":"0"));
+}
+function D8_on_off() {
+    var checkon = document.getElementById("checkD8").checked;
+    document.getElementById("allAccelView").hidden=true;
+    sendData("rpc/startD8?start=" + (checkon?"1":"0"));
 }
 function read_all () {
-    sendData("rpc/getMagnetField");
-    sendData("rpc/getAccel");
-    sendData("rpc/getCounter");
 }
 
 document.onreadystatechange = function () {
   var state = document.readyState;
   if (state == 'interactive') {
   } else if (state == 'complete') {
-   setInterval(read_all, 500);
+      setInterval(() => {
+        sendData("/getAllValues");
+      }, 500);
   }
 };
 
@@ -112,20 +121,21 @@ document.onreadystatechange = function () {
       <div id="magnetMin" name="magnetMin">
       </div>
     </fieldset>
-    <fieldset>
+    <fieldset id="allAccelView">
       <legend>Accel and Speed</legend>
         <fieldset>
             <legend>Init accel speed</legend>
-            Start accel module: <input type="checkbox" id="accel_speed_on" name="accel_speed_on" onchange="accel_on_off()"><br>
+            <input type="button" id="accel_speed_on" name="accel_speed_on" onclick="accel_on()" value="Start accel module"><br>
             <input type="button" id="button_init_accel_speed" name="button_init_accel_speed" onclick="init_accel_speed()" value="Reset">
         </fieldset>
       Speed :<span id="speed" name="speed"></span><br>
       Accel: <span id="accel" name="accel"></span><br>
-      Accel: <span id="accelRaw" name="accelRaw"></span><br>
+      Accel vector: <span id="accelRaw" name="accelRaw"></span><br>
+      AccelWG: <span id="accelWG" name="accelWG"></span><br>
       Accel max.: <span id="accelMaxWG" name="accelMaxWG"></span><br>
-      Accel initial: <span id="accelRawI" name="accelRawI"></span>
+      Accel vector initial: <span id="accelRawI" name="accelRawI"></span>
     </fieldset>
-    <fieldset>
+    <fieldset id="countView">
       <legend>Count</legend>
         <fieldset>
             <legend>Parametrage vitesse par roue codeuse</legend>
@@ -139,6 +149,11 @@ document.onreadystatechange = function () {
                 <option value="m">minute</option>
                 <option value="h">heure</option>
             </select>
+        </fieldset>
+        <fieldset>
+            <legend>Demarrage des leds</legend>
+            D7: <input type="checkbox" id="checkD7" onchange="D7_on_off()"><br> 
+            D8: <input type="checkbox" id="checkD8" onchange="D8_on_off()"><br> 
         </fieldset>
       <div id="counter" name="counter">
       </div>

@@ -19,6 +19,7 @@
 #include "index.h"
 #include "nvs_flash.h"
 
+#include "driver/gpio.h"
 #include <esp_http_server.h>
 
 #include "common.h"
@@ -27,7 +28,7 @@ static const char *TAG="HTTP";
 extern httpd_handle_t server;
 
 /* An HTTP GET handler */
-char resp_str[256];
+char resp_str[1024];
 
 esp_err_t index_get_handler(httpd_req_t *req)
 {
@@ -115,63 +116,7 @@ httpd_uri_t root_index = {
     .user_ctx = INDEX_HTML
 };
 
-esp_err_t rpc_getmagnetfield_get_handler(httpd_req_t *req)
-{
-    char*  buf;
-    size_t buf_len;
-
-    /* Get header value string length and allocate memory for length + 1,
-     * extra byte for null termination */
-    buf_len = httpd_req_get_hdr_value_len(req, "Host") + 1;
-    if (buf_len > 1) {
-        buf = malloc(buf_len);
-        /* Copy null terminated value string into buffer */
-        if (httpd_req_get_hdr_value_str(req, "Host", buf, buf_len) == ESP_OK) {
-            //ESP_LOGI(TAG, "Found header => Host: %s", buf);
-        }
-        free(buf);
-    }
-    double a = magnetoField;
-    double b = magnetoFieldMean;
-    double c = magnetoFieldMax;
-    double d = magnetoFieldMin;
-    
-    sprintf(resp_str, "{ "
-            "\"magnet\" : %c%d.%09d , "
-            "\"magnetMean\" : %c%d.%09d , "
-            "\"magnetMax\" : %c%d.%09d , "
-            "\"magnetMin\" : %c%d.%09d }",
-            
-            (a<0)?'-':' ',
-            (unsigned int)(((a<0)?-1:1) * a), ((unsigned int)(((a<0)?-1:1) * a * 1000000000)) % 1000000000,
-            (b<0)?'-':' ',
-            (unsigned int)(((b<0)?-1:1) * b), ((unsigned int)(((b<0)?-1:1) * b * 1000000000)) % 1000000000,
-            (c<0)?'-':' ',
-            (unsigned int)(((c<0)?-1:1) * c), ((unsigned int)(((c<0)?-1:1) * c * 1000000000)) % 1000000000,
-            (d<0)?'-':' ',
-            (unsigned int)(((d<0)?-1:1) * d), ((unsigned int)(((d<0)?-1:1) * d * 1000000000)) % 1000000000
-            );
-    
-    httpd_resp_send(req, resp_str, strlen(resp_str));
-
-    /* After sending the HTTP response the old HTTP request
-     * headers are lost. Check if HTTP request headers can be read now. */
-    if (httpd_req_get_hdr_value_len(req, "Host") == 0) {
-        //ESP_LOGI(TAG, "Request headers lost");
-    }
-    return ESP_OK;
-}
-
-httpd_uri_t rpc_getmagnetfield = {
-    .uri       = "/rpc/getMagnetField",
-    .method    = HTTP_GET,
-    .handler   = rpc_getmagnetfield_get_handler,
-    /* Let's pass response string in user
-     * context to demonstrate it's usage */
-    .user_ctx = NULL
-};
-
-esp_err_t rpc_getaccel_get_handler(httpd_req_t *req)
+esp_err_t get_all_values_handler(httpd_req_t *req)
 {
     char*  buf;
     size_t buf_len;
@@ -194,69 +139,63 @@ esp_err_t rpc_getaccel_get_handler(httpd_req_t *req)
     double c = get_XYZT_abs(&accelN);
     double d = get_XYZT_abs(&speed);
     double e = accelMaxWG;
+    double f = get_XYZT_abs(&accelWG);
+    
+    double g = magnetoField;
+    double h = magnetoFieldMean;
+    double i = magnetoFieldMax;
+    double j = magnetoFieldMin;
+    
     sprintf(resp_str, "{ "
-            "\"accelMaxWG\" : %d.%09d , "
-            "\"speed\" : %c%d.%09d , "
-            "\"accel\" : %c%d.%09d , "
-            "\"accelN\" : [ %c%d.%09d, %c%d.%09d, %c%d.%09d ], "
-            "\"accelI\" : [ %c%d.%09d, %c%d.%09d, %c%d.%09d ] }",
-            
+                " \"counter\" : { \"val\" : %d , \"duration\" : %d.%09d , \"freq\" : %d.%09d } ,"
+                " \"accel\" : { "
+                    "\"MaxWG\" : %d.%09d , "
+                    "\"WG\" : %d.%09d , "
+                    "\"speed\" : %d.%09d , "
+                    "\"val\" : %d.%09d , "
+                    "\"N\" : [ %c%d.%09d, %c%d.%09d, %c%d.%09d ], "
+                    "\"I\" : [ %c%d.%09d, %c%d.%09d, %c%d.%09d ] "
+                " } ,"
+                " \"magnet\" : { "
+                    "\"val\" : %c%d.%09d , "
+                    "\"Mean\" : %c%d.%09d , "
+                    "\"Max\" : %c%d.%09d , "
+                    "\"Min\" : %c%d.%09d"
+                " } "
+            " }",
+     // counter
+            counter,
+            (unsigned int)time_in_s, ((unsigned int)(time_in_s * 1000000000)) % 1000000000,
+            (unsigned int)counter_last_freq, ((unsigned int)(counter_last_freq * 1000000000)) % 1000000000,
+     // accel       
             (unsigned int)e, ((unsigned int)(e * 1000000000)) % 1000000000,
-            (d<0)?'-':' ',
-            (unsigned int)(((d<0)?-1:1) * d), ((unsigned int)(((d<0)?-1:1) * d * 1000000000)) % 1000000000,
-            (c<0)?'-':' ',
-            (unsigned int)(((c<0)?-1:1) * c), ((unsigned int)(((c<0)?-1:1) * c * 1000000000)) % 1000000000,
+            (unsigned int)f, ((unsigned int)(f * 1000000000)) % 1000000000,
+            (unsigned int)d, ((unsigned int)(d * 1000000000)) % 1000000000,
+            (unsigned int)c, ((unsigned int)(c * 1000000000)) % 1000000000,
+            
             (a->x<0)?'-':' ',
             (unsigned int)(((a->x<0)?-1:1) * a->x), ((unsigned int)(((a->x<0)?-1:1) * a->x * 1000000000)) % 1000000000,
             (a->y<0)?'-':' ',
             (unsigned int)(((a->y<0)?-1:1) * a->y), ((unsigned int)(((a->y<0)?-1:1) * a->y * 1000000000)) % 1000000000,
             (a->z<0)?'-':' ',
             (unsigned int)(((a->z<0)?-1:1) * a->z), ((unsigned int)(((a->z<0)?-1:1) * a->z * 1000000000)) % 1000000000,
+            
             (b->x<0)?'-':' ',
             (unsigned int)(((b->x<0)?-1:1) * b->x), ((unsigned int)(((b->x<0)?-1:1) * b->x * 1000000000)) % 1000000000,
             (b->y<0)?'-':' ',
             (unsigned int)(((b->y<0)?-1:1) * b->y), ((unsigned int)(((b->y<0)?-1:1) * b->y * 1000000000)) % 1000000000,
             (b->z<0)?'-':' ',
-            (unsigned int)(((b->z<0)?-1:1) * b->z), ((unsigned int)(((b->z<0)?-1:1) * b->z * 1000000000)) % 1000000000);
-    httpd_resp_send(req, resp_str, strlen(resp_str));
+            (unsigned int)(((b->z<0)?-1:1) * b->z), ((unsigned int)(((b->z<0)?-1:1) * b->z * 1000000000)) % 1000000000,
+    // magnet
+            (g<0)?'-':' ',
+            (unsigned int)(((g<0)?-1:1) * g), ((unsigned int)(((g<0)?-1:1) * g * 1000000000)) % 1000000000,
+            (h<0)?'-':' ',
+            (unsigned int)(((h<0)?-1:1) * h), ((unsigned int)(((h<0)?-1:1) * h * 1000000000)) % 1000000000,
+            (i<0)?'-':' ',
+            (unsigned int)(((i<0)?-1:1) * i), ((unsigned int)(((i<0)?-1:1) * i * 1000000000)) % 1000000000,
+            (j<0)?'-':' ',
+            (unsigned int)(((j<0)?-1:1) * j), ((unsigned int)(((j<0)?-1:1) * j * 1000000000)) % 1000000000
 
-    /* After sending the HTTP response the old HTTP request
-     * headers are lost. Check if HTTP request headers can be read now. */
-    if (httpd_req_get_hdr_value_len(req, "Host") == 0) {
-        //ESP_LOGI(TAG, "Request headers lost");
-    }
-    return ESP_OK;
-}
-
-httpd_uri_t rpc_getaccel = {
-    .uri       = "/rpc/getAccel",
-    .method    = HTTP_GET,
-    .handler   = rpc_getaccel_get_handler,
-    /* Let's pass response string in user
-     * context to demonstrate it's usage */
-    .user_ctx = NULL
-};
-
-esp_err_t rpc_getcounter_handler(httpd_req_t *req)
-{
-    char*  buf;
-    size_t buf_len;
-
-    /* Get header value string length and allocate memory for length + 1,
-     * extra byte for null termination */
-    buf_len = httpd_req_get_hdr_value_len(req, "Host") + 1;
-    if (buf_len > 1) {
-        buf = malloc(buf_len);
-        /* Copy null terminated value string into buffer */
-        if (httpd_req_get_hdr_value_str(req, "Host", buf, buf_len) == ESP_OK) {
-            //ESP_LOGI(TAG, "Found header => Host: %s", buf);
-        }
-        free(buf);
-    }
-
-    sprintf(resp_str, "{ \"count\" : %d , \"duration\" : %d.%09d , \"freq\" : %d.%09d }", counter,
-            (unsigned int)time_in_s, ((unsigned int)(time_in_s * 1000000000)) % 1000000000,
-            (unsigned int)counter_last_freq, ((unsigned int)(counter_last_freq * 1000000000)) % 1000000000
             );
     httpd_resp_send(req, resp_str, strlen(resp_str));
 
@@ -268,16 +207,14 @@ esp_err_t rpc_getcounter_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
-
-httpd_uri_t rpc_getcounter = {
-    .uri       = "/rpc/getCounter",
+httpd_uri_t rpc_getter = {
+    .uri       = "/getAllValues",
     .method    = HTTP_GET,
-    .handler   = rpc_getcounter_handler,
+    .handler   = get_all_values_handler,
     /* Let's pass response string in user
      * context to demonstrate it's usage */
     .user_ctx = NULL
 };
-
 
 esp_err_t rpc_initaccelspeed_get_handler(httpd_req_t *req)
 {
@@ -385,24 +322,7 @@ esp_err_t rpc_accel_start_handler(httpd_req_t *req)
         }
         free(buf);
     }
-    /* Read URL query string length and allocate memory for length + 1,
-     * extra byte for null termination */
-    buf_len = httpd_req_get_url_query_len(req) + 1;
-    if (buf_len > 1) {
-        buf = malloc(buf_len);
-        if (httpd_req_get_url_query_str(req, buf, buf_len) == ESP_OK) {
-            char param[32];
-            // Get value of expected key from query string
-            if (httpd_query_key_value(buf, "start", param, sizeof(param)) == ESP_OK) {
-                int new = (param[0] == '0')?0:1;
-                if (accelero_started != new) {
-                    accel_speed_has_to_be_switch = 1;
-                }
-                //ESP_LOGI(TAG, "Found URL query => %s = %s", buf, param);
-            }
-        }
-        free(buf);
-    }
+    accel_speed_has_to_be_switch = 1;
     
     const char * resp_str1 = "1";
     httpd_resp_send(req, resp_str1, strlen(resp_str1));
@@ -424,84 +344,121 @@ httpd_uri_t rpc_accelstart = {
     .user_ctx = NULL
 };
 
-
-/* An HTTP POST handler */
-esp_err_t echo_post_handler(httpd_req_t *req)
+int D8_on = 0;
+esp_err_t rpc_D8_on_off_handler(httpd_req_t *req)
 {
-    char buf[100];
-    int ret, remaining = req->content_len;
+    char*  buf;
+    size_t buf_len;
 
-    while (remaining > 0) {
-        /* Read the data for the request */
-        if ((ret = httpd_req_recv(req, buf,
-                        MIN(remaining, sizeof(buf)))) <= 0) {
-            if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
-                /* Retry receiving if timeout occurred */
-                continue;
+    /* Get header value string length and allocate memory for length + 1,
+     * extra byte for null termination */
+    buf_len = httpd_req_get_hdr_value_len(req, "Host") + 1;
+    if (buf_len > 1) {
+        buf = malloc(buf_len);
+        /* Copy null terminated value string into buffer */
+        if (httpd_req_get_hdr_value_str(req, "Host", buf, buf_len) == ESP_OK) {
+            //ESP_LOGI(TAG, "Found header => Host: %s", buf);
+        }
+        free(buf);
+    }
+    /* Read URL query string length and allocate memory for length + 1,
+     * extra byte for null termination */
+    buf_len = httpd_req_get_url_query_len(req) + 1;
+    if (buf_len > 1) {
+        buf = malloc(buf_len);
+        if (httpd_req_get_url_query_str(req, buf, buf_len) == ESP_OK) {
+            char param[32];
+            // Get value of expected key from query string
+            if (httpd_query_key_value(buf, "start", param, sizeof(param)) == ESP_OK) {
+                int new = (param[0] == '0')?0:1;
+                if (D8_on != new) {
+                    gpio_set_level(GPIO_NUM_15, new);
+                    D8_on = new;
+                }
+                ESP_LOGI(TAG, "Found URL query => %s = %s", buf, param);
             }
-            return ESP_FAIL;
         }
-
-        /* Send back the same data */
-        httpd_resp_send_chunk(req, buf, ret);
-        remaining -= ret;
-
-        /* Log data received */
-        //ESP_LOGI(TAG, "=========== RECEIVED DATA ==========");
-        //ESP_LOGI(TAG, "%.*s", ret, buf);
-        //ESP_LOGI(TAG, "====================================");
+        free(buf);
     }
+    
+    const char * resp_str1 = "1";
+    httpd_resp_send(req, resp_str1, strlen(resp_str1));
 
-    // End response
-    httpd_resp_send_chunk(req, NULL, 0);
+    /* After sending the HTTP response the old HTTP request
+     * headers are lost. Check if HTTP request headers can be read now. */
+    if (httpd_req_get_hdr_value_len(req, "Host") == 0) {
+        //ESP_LOGI(TAG, "Request headers lost");
+    }
     return ESP_OK;
 }
 
-httpd_uri_t echo = {
-    .uri       = "/echo",
-    .method    = HTTP_POST,
-    .handler   = echo_post_handler,
-    .user_ctx  = NULL
+httpd_uri_t rpc_D8_on_off = {
+    .uri       = "/rpc/startD8",
+    .method    = HTTP_GET,
+    .handler   = rpc_D8_on_off_handler,
+    /* Let's pass response string in user
+     * context to demonstrate it's usage */
+    .user_ctx = NULL
 };
 
-/* An HTTP PUT handler. This demonstrates realtime
- * registration and deregistration of URI handlers
- */
-esp_err_t ctrl_put_handler(httpd_req_t *req)
+
+int D7_on = 0;
+esp_err_t rpc_D7_on_off_handler(httpd_req_t *req)
 {
-    char buf;
-    int ret;
+    char*  buf;
+    size_t buf_len;
 
-    if ((ret = httpd_req_recv(req, &buf, 1)) <= 0) {
-        if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
-            httpd_resp_send_408(req);
+    /* Get header value string length and allocate memory for length + 1,
+     * extra byte for null termination */
+    buf_len = httpd_req_get_hdr_value_len(req, "Host") + 1;
+    if (buf_len > 1) {
+        buf = malloc(buf_len);
+        /* Copy null terminated value string into buffer */
+        if (httpd_req_get_hdr_value_str(req, "Host", buf, buf_len) == ESP_OK) {
+            //ESP_LOGI(TAG, "Found header => Host: %s", buf);
         }
-        return ESP_FAIL;
+        free(buf);
     }
+    /* Read URL query string length and allocate memory for length + 1,
+     * extra byte for null termination */
+    buf_len = httpd_req_get_url_query_len(req) + 1;
+    if (buf_len > 1) {
+        buf = malloc(buf_len);
+        if (httpd_req_get_url_query_str(req, buf, buf_len) == ESP_OK) {
+            char param[32];
+            // Get value of expected key from query string
+            if (httpd_query_key_value(buf, "start", param, sizeof(param)) == ESP_OK) {
+                int new = (param[0] == '0')?0:1;
+                if (D7_on != new) {
+                    gpio_set_level(GPIO_NUM_13, new);
+                    D7_on = new;
+                }
+                //ESP_LOGI(TAG, "Found URL query => %s = %s", buf, param);
+            }
+        }
+        free(buf);
+    }
+    
+    const char * resp_str1 = "1";
+    httpd_resp_send(req, resp_str1, strlen(resp_str1));
 
-    if (buf == '0') {
-        /* Handler can be unregistered using the uri string */
-        //ESP_LOGI(TAG, "Unregistering /hello and /echo URIs");
-        httpd_unregister_uri(req->handle, "/hello");
-        httpd_unregister_uri(req->handle, "/echo");
+    /* After sending the HTTP response the old HTTP request
+     * headers are lost. Check if HTTP request headers can be read now. */
+    if (httpd_req_get_hdr_value_len(req, "Host") == 0) {
+        //ESP_LOGI(TAG, "Request headers lost");
     }
-    else {
-        //ESP_LOGI(TAG, "Registering /hello and /echo URIs");
-        httpd_register_uri_handler(req->handle, &root_index);
-        httpd_register_uri_handler(req->handle, &echo);
-    }
-
-    /* Respond with empty body */
-    httpd_resp_send(req, NULL, 0);
     return ESP_OK;
 }
 
-httpd_uri_t ctrl = {
-    .uri       = "/ctrl",
-    .method    = HTTP_PUT,
-    .handler   = ctrl_put_handler,
-    .user_ctx  = NULL
+httpd_uri_t rpc_D7_on_off = {
+    .uri       = "/rpc/startD7",
+    .method    = HTTP_GET,
+    .handler   = rpc_D7_on_off_handler,
+    /* Let's pass response string in user
+     * context to demonstrate it's usage */
+    .user_ctx = NULL
 };
+
 
 httpd_handle_t start_webserver(void)
 {
@@ -514,12 +471,12 @@ httpd_handle_t start_webserver(void)
         // Set URI handlers
         //ESP_LOGI(TAG, "Registering URI handlers");
         httpd_register_uri_handler(server, &root_index);
-        httpd_register_uri_handler(server, &rpc_getcounter);
-        httpd_register_uri_handler(server, &rpc_getmagnetfield);
-        httpd_register_uri_handler(server, &rpc_getaccel);
+        httpd_register_uri_handler(server, &rpc_getter);
         httpd_register_uri_handler(server, &rpc_accelstart);
         httpd_register_uri_handler(server, &rpc_initaccelspeed);
         httpd_register_uri_handler(server, &rpc_configmagneto);
+        httpd_register_uri_handler(server, &rpc_D7_on_off);
+        httpd_register_uri_handler(server, &rpc_D8_on_off);
         //httpd_register_uri_handler(server, &echo);
         //httpd_register_uri_handler(server, &ctrl);
         return server;
