@@ -491,28 +491,91 @@ static void i2c_task_example(void *arg)
     i2c_driver_delete(I2C_EXAMPLE_MASTER_NUM);
 }
 
-int GPIO_levels[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} ;
-int GPIO_previous_levels[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} ;
+int GPIO_levels[17] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1} ;
+int GPIO_previous1_levels[17] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1} ;
+int GPIO_previous2_levels[17] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1} ;
 double GPIO_levels_time[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} ;
-double GPIO_previous_levels_time[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} ;
+double GPIO_previous1_levels_time[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} ;
+double GPIO_previous2_levels_time[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} ;
 unsigned int counter = 0;
-unsigned int counter_last = 0;
-double counter_last_time_in_s = 0;
-double counter_last_freq = 0;
+double counter_period = 1;
+double first_time = -1;
+int first_gpio4_change = 0;
+int first_gpio5_change = 0;
 static void gpio_isr_handler(void *arg)
 {
     uint32_t gpio_num = (uint32_t) arg;
-    int last_level = GPIO_levels[gpio_num];
-    double last_level_time = GPIO_levels_time[gpio_num];
-    GPIO_levels[gpio_num] = gpio_get_level(gpio_num);
-    GPIO_levels_time[gpio_num] = time_in_s;
-    if (GPIO_levels[gpio_num] != last_level) counter++;
-    if (counter % 2 == 0) {
-        double new_time_in_s = time_in_s;
-        counter_last_freq = 1 / (2 * (new_time_in_s - counter_last_time_in_s) / (counter - counter_last));
-        counter_last_time_in_s = new_time_in_s;
-        counter_last = counter;
+    if (gpio_num == 4 && first_gpio4_change == 0)
+    {
+        first_gpio4_change = 1;
+        return;
     }
+    if (gpio_num == 5 && first_gpio5_change == 0)
+    {
+        first_gpio5_change = 1;
+        return;
+    }
+    int nb_of_doors = GPIO_levels[13] + GPIO_levels[15];
+    if (first_time == -1) first_time = time_in_s;
+    int gpio_num2 = 5;
+    if (gpio_num == 5) gpio_num2 = 4;
+    if (gpio_num == 4) gpio_num2 = 5;
+
+    int last_level = GPIO_levels[gpio_num];
+    int new_level = gpio_get_level(gpio_num);
+    double last_level_time = GPIO_levels_time[gpio_num];
+    if (nb_of_doors == 1)
+    {
+        last_level_time = GPIO_levels_time[gpio_num];
+    }
+    else if (nb_of_doors == 2)
+    {
+        last_level_time = GPIO_levels_time[gpio_num2];
+    }
+
+        if (((time_in_s - last_level_time) >= 0.01) && last_level != new_level)
+        {
+            GPIO_previous2_levels[gpio_num] = GPIO_previous1_levels[gpio_num];
+            GPIO_previous1_levels[gpio_num] = GPIO_levels[gpio_num];
+            GPIO_levels[gpio_num] = new_level;
+            
+            GPIO_previous2_levels_time[gpio_num] = GPIO_previous1_levels_time[gpio_num];
+            GPIO_previous1_levels_time[gpio_num] = GPIO_levels_time[gpio_num];
+            GPIO_levels_time[gpio_num] = time_in_s;
+            counter++;
+        }
+
+
+    int ok = 0;
+    double new_time = 0;
+    double last_time = 0;
+    new_time = GPIO_levels_time[gpio_num];
+        counter_period = nb_of_doors + 10;
+    if (nb_of_doors == 1)
+    {
+        counter_period = 2;
+        if (counter > 2)
+        {
+        counter_period = 3;
+            last_time = GPIO_previous2_levels_time[gpio_num];
+            ok = 1;
+        }
+    }
+    else if (nb_of_doors == 2)
+    {
+        if (counter > 1)
+        {
+            last_time = GPIO_previous1_levels_time[gpio_num2];
+            ok = 1;
+        }
+    }
+
+    if (ok != 0)
+    {
+        counter_period = (new_time - last_time);
+        if (counter_period < 0) counter_period = -counter_period;
+    }
+    if (counter_period == 0) counter_period = -2;
 }
 
 

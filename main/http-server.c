@@ -145,9 +145,10 @@ esp_err_t get_all_values_handler(httpd_req_t *req)
     double h = magnetoFieldMean;
     double i = magnetoFieldMax;
     double j = magnetoFieldMin;
-    
+    double time = time_in_s - first_time;
+    if (first_time == -1) time = 0;
     sprintf(resp_str, "{ "
-                " \"counter\" : { \"val\" : %d , \"duration\" : %d.%09d , \"freq\" : %d.%09d } ,"
+                " \"counter\" : { \"val\" : %d , \"duration\" : %d.%09d , \"period\" : %d.%09d } ,"
                 " \"accel\" : { "
                     "\"MaxWG\" : %d.%09d , "
                     "\"WG\" : %d.%09d , "
@@ -165,8 +166,8 @@ esp_err_t get_all_values_handler(httpd_req_t *req)
             " }",
      // counter
             counter,
-            (unsigned int)time_in_s, ((unsigned int)(time_in_s * 1000000000)) % 1000000000,
-            (unsigned int)counter_last_freq, ((unsigned int)(counter_last_freq * 1000000000)) % 1000000000,
+            (unsigned int)time, ((unsigned int)(time * 1000000000)) % 1000000000,
+            (unsigned int)counter_period, ((unsigned int)(counter_period * 1000000000)) % 1000000000,
      // accel       
             (unsigned int)e, ((unsigned int)(e * 1000000000)) % 1000000000,
             (unsigned int)f, ((unsigned int)(f * 1000000000)) % 1000000000,

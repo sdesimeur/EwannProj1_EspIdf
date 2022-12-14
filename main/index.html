@@ -16,7 +16,7 @@ function sendData(action) {
           
           var count = parseFloat(tmp.counter.val);
           var duration = parseFloat(tmp.counter.duration);
-          var freq = parseFloat(tmp.counter.freq);
+          var freq = 1 / parseFloat(tmp.counter.period);
           var tmp1 = "duration:" + duration + "s<br>count:" + count + "<br>frequence: " + freq + "/s<br> speed:";
           var s = (freq * parseFloat(document.getElementById("counter_val_per_pulse").value));
           var u = document.getElementById("counter_time_unit").value;
