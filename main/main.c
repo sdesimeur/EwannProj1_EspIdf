@@ -507,17 +507,16 @@ int nb_of_doors = 0;
 static void gpio_isr_handler(void *arg)
 {
     uint32_t gpio_num = (uint32_t) arg;
+    nb_of_doors = GPIO_levels[13] + GPIO_levels[15];
     if (gpio_num == 4 && first_gpio4_change == 0)
     {
         first_gpio4_change = 1;
-        return;
     }
     if (gpio_num == 5 && first_gpio5_change == 0)
     {
         first_gpio5_change = 1;
-        return;
     }
-    nb_of_doors = GPIO_levels[13] + GPIO_levels[15];
+    if ((first_gpio5_change + first_gpio4_change) != nb_of_doors) return;
     if (first_time == -1) 
     {
         first_time = time_in_s;
