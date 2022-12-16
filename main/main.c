@@ -498,10 +498,12 @@ double GPIO_levels_time[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 double GPIO_previous1_levels_time[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} ;
 double GPIO_previous2_levels_time[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} ;
 unsigned int counter = 0;
-double counter_period = 1;
+double counter_period = 0;
 double first_time = -1;
+double last_time = 0;
 int first_gpio4_change = 0;
 int first_gpio5_change = 0;
+int nb_of_doors = 0;
 static void gpio_isr_handler(void *arg)
 {
     uint32_t gpio_num = (uint32_t) arg;
@@ -515,8 +517,12 @@ static void gpio_isr_handler(void *arg)
         first_gpio5_change = 1;
         return;
     }
-    int nb_of_doors = GPIO_levels[13] + GPIO_levels[15];
-    if (first_time == -1) first_time = time_in_s;
+    nb_of_doors = GPIO_levels[13] + GPIO_levels[15];
+    if (first_time == -1) 
+    {
+        first_time = time_in_s;
+        last_time = time_in_s;
+    }
     int gpio_num2 = 5;
     if (gpio_num == 5) gpio_num2 = 4;
     if (gpio_num == 4) gpio_num2 = 5;
@@ -542,6 +548,7 @@ static void gpio_isr_handler(void *arg)
             GPIO_previous2_levels_time[gpio_num] = GPIO_previous1_levels_time[gpio_num];
             GPIO_previous1_levels_time[gpio_num] = GPIO_levels_time[gpio_num];
             GPIO_levels_time[gpio_num] = time_in_s;
+            last_time = time_in_s;
             counter++;
         }
 
@@ -550,13 +557,10 @@ static void gpio_isr_handler(void *arg)
     double new_time = 0;
     double last_time = 0;
     new_time = GPIO_levels_time[gpio_num];
-        counter_period = nb_of_doors + 10;
     if (nb_of_doors == 1)
     {
-        counter_period = 2;
         if (counter > 2)
         {
-        counter_period = 3;
             last_time = GPIO_previous2_levels_time[gpio_num];
             ok = 1;
         }
@@ -569,13 +573,16 @@ static void gpio_isr_handler(void *arg)
             ok = 1;
         }
     }
+    else
+    {
+        counter_period = 0;
+    }
 
     if (ok != 0)
     {
         counter_period = (new_time - last_time);
         if (counter_period < 0) counter_period = -counter_period;
     }
-    if (counter_period == 0) counter_period = -2;
 }
 
 
@@ -646,6 +653,7 @@ void app_main(void)
             //ESP_LOGW(TAG, "Accel errors: %d", ret_hw_timer_callback_error);
             //ESP_LOGW(TAG, "Accel OK: %d", ret_hw_timer_callback_OK);
             vTaskDelay(500 / portTICK_RATE_MS);
+                   // ESP_LOGW(TAG, "counter_period = %f, nb_of_doors = %d", counter_period, nb_of_doors);
     }
 
 }

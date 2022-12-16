@@ -145,23 +145,53 @@ esp_err_t get_all_values_handler(httpd_req_t *req)
     double h = magnetoFieldMean;
     double i = magnetoFieldMax;
     double j = magnetoFieldMin;
-    double time = time_in_s - first_time;
+    double time = last_time - first_time;
     if (first_time == -1) time = 0;
+
     sprintf(resp_str, "{ "
-                " \"counter\" : { \"val\" : %d , \"duration\" : %d.%09d , \"period\" : %d.%09d } ,"
+                " \"counter\" : { \"val\" : %u , \"duration\" : %f , \"period\" : %f } ,"
                 " \"accel\" : { "
-                    "\"MaxWG\" : %d.%09d , "
-                    "\"WG\" : %d.%09d , "
-                    "\"speed\" : %d.%09d , "
-                    "\"val\" : %d.%09d , "
-                    "\"N\" : [ %c%d.%09d, %c%d.%09d, %c%d.%09d ], "
-                    "\"I\" : [ %c%d.%09d, %c%d.%09d, %c%d.%09d ] "
+                    "\"MaxWG\" : %f , "
+                    "\"WG\" : %f , "
+                    "\"speed\" : %f , "
+                    "\"val\" : %f , "
+                    "\"N\" : [ %f, %f, %f ], "
+                    "\"I\" : [ %f, %f, %f ] "
                 " } ,"
                 " \"magnet\" : { "
-                    "\"val\" : %c%d.%09d , "
-                    "\"Mean\" : %c%d.%09d , "
-                    "\"Max\" : %c%d.%09d , "
-                    "\"Min\" : %c%d.%09d"
+                    "\"val\" : %f , "
+                    "\"Mean\" : %f , "
+                    "\"Max\" : %f , "
+                    "\"Min\" : %f "
+                " } "
+            " }",
+     // counter
+            counter,
+            time,
+            counter_period,
+     // accel       
+            e, f, d, c,
+            a->x, a->y, a->z,
+            b->x, b->y, b->z,
+    // magnet
+            g, h, i, j
+            );
+#if 0
+    sprintf(resp_str, "{ "
+                " \"counter\" : { \"val\" : %u , \"duration\" : %u.%09u , \"period\" : %u.%09u } ,"
+                " \"accel\" : { "
+                    "\"MaxWG\" : %u.%09u , "
+                    "\"WG\" : %u.%09u , "
+                    "\"speed\" : %u.%09u , "
+                    "\"val\" : %u.%09u , "
+                    "\"N\" : [ %c%u.%09u, %c%d.%09u, %c%u.%09u ], "
+                    "\"I\" : [ %c%u.%09u, %c%d.%09u, %c%u.%09u ] "
+                " } ,"
+                " \"magnet\" : { "
+                    "\"val\" : %c%u.%09u , "
+                    "\"Mean\" : %c%u.%09u , "
+                    "\"Max\" : %c%u.%09u , "
+                    "\"Min\" : %c%u.%09u "
                 " } "
             " }",
      // counter
@@ -198,6 +228,7 @@ esp_err_t get_all_values_handler(httpd_req_t *req)
             (unsigned int)(((j<0)?-1:1) * j), ((unsigned int)(((j<0)?-1:1) * j * 1000000000)) % 1000000000
 
             );
+#endif
     httpd_resp_send(req, resp_str, strlen(resp_str));
 
     /* After sending the HTTP response the old HTTP request
@@ -253,13 +284,21 @@ esp_err_t rpc_command_handler(httpd_req_t *req)
                 int gpio_num = 0;
                 sscanf(param, "%d", &gpio_num);
                 char param1[3];
+                int new = GPIO_levels[gpio_num];
                 if (httpd_query_key_value(buf, "level", param1, sizeof(param1)) == ESP_OK) {
-                    int new = (param1[0] == '0')?0:1;
+                    new = (param1[0] == '0')?0:1;
                     if (GPIO_levels[gpio_num] != new) {
                         gpio_set_level(gpio_num, new);
                         GPIO_levels[gpio_num] = new;
+                        first_time = -1;
+                        last_time = 0;
+                        first_gpio4_change = 0;
+                        first_gpio5_change = 0;
+                        counter = 0;
+                        counter_period = 0;
                     }
                 }
+                ESP_LOGW(TAG, "gpio_num = %d, level = %d", gpio_num, GPIO_levels[gpio_num]);
             }
         }
         free(buf);

@@ -16,7 +16,8 @@
 	"          \n" \
 	"          var count = parseFloat(tmp.counter.val);\n" \
 	"          var duration = parseFloat(tmp.counter.duration);\n" \
-	"          var freq = 1 / parseFloat(tmp.counter.period);\n" \
+	"          var freq = parseFloat(tmp.counter.period);\n" \
+	"          if (freq !== 0) freq = 1/freq;\n" \
 	"          var tmp1 = \"duration:\" + duration + \"s<br>count:\" + count + \"<br>frequence: \" + freq + \"/s<br> speed:\";\n" \
 	"          var s = (freq * parseFloat(document.getElementById(\"counter_val_per_pulse\").value));\n" \
 	"          var u = document.getElementById(\"counter_time_unit\").value;\n" \
