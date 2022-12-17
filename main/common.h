@@ -22,8 +22,6 @@ extern double time_in_s;
 extern double counter_period;
 extern double first_time;
 extern double last_time;
-extern int first_gpio4_change;
-extern int first_gpio5_change;
 extern int accelero_started;
 extern int accel_speed_has_to_be_switch;
 extern double accelMaxWG;
@@ -32,6 +30,7 @@ extern double magnetoFieldMean;
 extern double magnetoFieldMax;
 extern double magnetoFieldMin;
 extern int GPIO_levels[];
+extern int nb_of_doors;
 
 double get_XYZT_abs(XYZT *a);
 double get_magnetofield ();

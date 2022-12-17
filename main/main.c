@@ -501,23 +501,13 @@ unsigned int counter = 0;
 double counter_period = 0;
 double first_time = -1;
 double last_time = 0;
-int first_gpio4_change = 0;
-int first_gpio5_change = 0;
 int nb_of_doors = 0;
 static void gpio_isr_handler(void *arg)
 {
     uint32_t gpio_num = (uint32_t) arg;
-    nb_of_doors = GPIO_levels[13] + GPIO_levels[15];
-    if (gpio_num == 4 && first_gpio4_change == 0)
-    {
-        first_gpio4_change = 1;
-    }
-    if (gpio_num == 5 && first_gpio5_change == 0)
-    {
-        first_gpio5_change = 1;
-    }
-    if ((first_gpio5_change + first_gpio4_change) != nb_of_doors) return;
-    if (first_time == -1) 
+    int last_level = GPIO_levels[gpio_num];
+    int new_level = gpio_get_level(gpio_num);
+    if (first_time == -1 && last_level != -1) 
     {
         first_time = time_in_s;
         last_time = time_in_s;
@@ -526,8 +516,6 @@ static void gpio_isr_handler(void *arg)
     if (gpio_num == 5) gpio_num2 = 4;
     if (gpio_num == 4) gpio_num2 = 5;
 
-    int last_level = GPIO_levels[gpio_num];
-    int new_level = gpio_get_level(gpio_num);
     double last_level_time = GPIO_levels_time[gpio_num];
     if (nb_of_doors == 1)
     {
@@ -548,7 +536,7 @@ static void gpio_isr_handler(void *arg)
             GPIO_previous1_levels_time[gpio_num] = GPIO_levels_time[gpio_num];
             GPIO_levels_time[gpio_num] = time_in_s;
             last_time = time_in_s;
-            counter++;
+            if (last_level != -1) counter++;
         }
 
 

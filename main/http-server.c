@@ -288,17 +288,28 @@ esp_err_t rpc_command_handler(httpd_req_t *req)
                 if (httpd_query_key_value(buf, "level", param1, sizeof(param1)) == ESP_OK) {
                     new = (param1[0] == '0')?0:1;
                     if (GPIO_levels[gpio_num] != new) {
-                        gpio_set_level(gpio_num, new);
                         GPIO_levels[gpio_num] = new;
-                        first_time = -1;
-                        last_time = 0;
-                        first_gpio4_change = 0;
-                        first_gpio5_change = 0;
                         counter = 0;
                         counter_period = 0;
+                        first_time = -1;
+                        last_time = 0;
+                        GPIO_levels[4] = -1;
+                        GPIO_levels[5] = -1;
+                        nb_of_doors = (GPIO_levels[13] == 1) + (GPIO_levels[15] == 1);
+                        gpio_set_level(gpio_num, new);
+                        vTaskDelay(10 / portTICK_RATE_MS);
+                        if (GPIO_levels[4] == -1 && GPIO_levels[5] == -1)
+                        {
+                            GPIO_levels[4] = 0;
+                            GPIO_levels[5] = 0;
+                        }
                     }
                 }
                 ESP_LOGW(TAG, "gpio_num = %d, level = %d", gpio_num, GPIO_levels[gpio_num]);
+                ESP_LOGW(TAG, "gpio_num = 13, level = %d", GPIO_levels[13]);
+                ESP_LOGW(TAG, "gpio_num = 15, level = %d", GPIO_levels[15]);
+                ESP_LOGW(TAG, "new = %d", new);
+                ESP_LOGW(TAG, "nb_of_doors = %d", nb_of_doors);
             }
         }
         free(buf);
