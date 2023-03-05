@@ -1,0 +1,4 @@
+#define EXAMPLE_ESP_WIFI_SSID "mywifissid"
+#define EXAMPLE_ESP_WIFI_PASS "mywifipass"
+
+
